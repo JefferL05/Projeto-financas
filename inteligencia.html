@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#0b0f14" />
+  <meta name="description" content="Assistente financeiro inteligente e planejamento de longo prazo do Projeto Finanças." />
+  <title>IA & Planejamento | Projeto Finanças</title>
+  <link rel="manifest" href="manifest.json" />
+  <link rel="stylesheet" href="css/styles.css" />
+  <style>
+    .intel-shell{max-width:1180px;margin:0 auto;padding:22px 14px 50px}.intel-top{display:flex;gap:12px;align-items:center;justify-content:space-between;flex-wrap:wrap;margin-bottom:16px}.back-link{color:var(--text);text-decoration:none;background:var(--panel2);border:1px solid var(--border);padding:9px 12px;border-radius:11px}.tabs{display:flex;gap:8px;overflow:auto;margin-bottom:14px}.tab-btn{border:1px solid var(--border);background:var(--panel2);color:var(--muted);padding:10px 13px;border-radius:12px;white-space:nowrap}.tab-btn.active{background:#fff;color:#0b0f14}.intel-view{display:none}.intel-view.active{display:block}.ai-layout,.plan-grid,.goal-form{display:grid;gap:12px}.ai-chat{min-height:420px;display:flex;flex-direction:column}.chat-log{display:flex;flex-direction:column;gap:10px;flex:1;max-height:520px;overflow:auto;padding:4px}.msg{max-width:86%;padding:11px 13px;border-radius:14px;line-height:1.45;font-size:.9rem}.msg.bot{align-self:flex-start;background:var(--panel2);border:1px solid var(--border)}.msg.user{align-self:flex-end;background:#f5f7fa;color:#0b0f14}.chat-compose{display:grid;grid-template-columns:1fr auto;gap:8px;margin-top:12px}.quick-prompts{display:flex;gap:7px;flex-wrap:wrap;margin-top:10px}.quick-prompts button{font-size:.76rem}.insight-list{display:grid;gap:9px}.insight{background:var(--panel2);border-left:3px solid var(--accent);padding:11px;border-radius:10px}.insight.warning{border-left-color:#fbbf24}.insight.danger{border-left-color:var(--expense)}.insight.good{border-left-color:var(--income)}.goal-form{grid-template-columns:1fr}.goal-list{display:grid;gap:10px;margin-top:12px}.goal-card{background:var(--panel2);border:1px solid var(--border);padding:13px;border-radius:14px}.goal-head{display:flex;justify-content:space-between;gap:10px}.progress{height:9px;border-radius:999px;background:#0b0f14;overflow:hidden;margin:10px 0 5px}.progress>span{display:block;height:100%;background:linear-gradient(90deg,var(--accent),var(--income));border-radius:999px}.goal-meta{display:flex;justify-content:space-between;gap:8px;color:var(--muted);font-size:.75rem;flex-wrap:wrap}.scenario-grid{display:grid;gap:10px;margin-top:12px}.scenario-result{font-size:1.35rem;font-weight:800;margin-top:6px}.goal-actions{display:flex;gap:8px;margin-top:10px}.goal-actions button{font-size:.75rem}.ai-badge{display:inline-flex;align-items:center;gap:6px;padding:5px 8px;border:1px solid rgba(63,213,154,.25);background:rgba(63,213,154,.08);color:var(--income);border-radius:999px;font-size:.72rem;margin-top:6px}@media(min-width:760px){.intel-shell{padding:30px 22px 60px}.ai-layout{grid-template-columns:minmax(0,1.35fr) minmax(300px,.65fr)}.plan-grid{grid-template-columns:1.1fr .9fr}.goal-form{grid-template-columns:1.3fr .8fr .8fr .8fr}.scenario-grid{grid-template-columns:repeat(3,1fr)}}
+  </style>
+  <script type="module" src="js/inteligencia.js"></script>
+</head>
+<body>
+  <main class="intel-shell">
+    <header class="intel-top">
+      <div><p class="eyebrow">🇵🇾 🇧🇷 Projeto Finanças</p><h1>IA & Planejamento</h1><span class="ai-badge">● Inteligência financeira local e privada</span></div>
+      <a class="back-link" href="index.html">← Voltar ao Dashboard</a>
+    </header>
+    <nav class="tabs">
+      <button class="tab-btn active" data-tab="ia">🤖 Assistente IA</button>
+      <button class="tab-btn" data-tab="planejamento">🎯 Planejamento de Longo Prazo</button>
+    </nav>
+    <section id="tab-ia" class="intel-view active">
+      <div class="ai-layout">
+        <article class="card ai-chat">
+          <div class="card-head"><div><h2>Assistente Financeiro</h2><p>Analisa os dados salvos no seu próprio navegador.</p></div></div>
+          <div id="chatLog" class="chat-log"></div>
+          <div class="quick-prompts">
+            <button class="btn btn-secondary" data-prompt="Como estão meus gastos este mês?">Gastos do mês</button>
+            <button class="btn btn-secondary" data-prompt="Onde posso economizar?">Onde economizar?</button>
+            <button class="btn btn-secondary" data-prompt="Qual minha maior categoria de gasto?">Maior categoria</button>
+            <button class="btn btn-secondary" data-prompt="Estou poupando bem?">Poupança</button>
+          </div>
+          <div class="chat-compose"><input id="aiQuestion" class="input" placeholder="Pergunte sobre suas finanças..." /><button id="askAiBtn" class="btn btn-primary">Enviar</button></div>
+        </article>
+        <article class="card">
+          <div class="card-head"><div><h2>Insights automáticos</h2><p>Sinais calculados com base no mês atual.</p></div></div>
+          <div id="aiInsights" class="insight-list"></div>
+        </article>
+      </div>
+    </section>
+    <section id="tab-planejamento" class="intel-view">
+      <div class="plan-grid">
+        <article class="card">
+          <div class="card-head"><div><h2>Metas de longo prazo</h2><p>Casa, reserva, viagem, carro, estudos ou qualquer objetivo.</p></div></div>
+          <div class="goal-form">
+            <input id="goalName" class="input" placeholder="Nome da meta" />
+            <select id="goalCurrency" class="input"><option value="PYG">PYG</option><option value="BRL">BRL</option></select>
+            <input id="goalTarget" class="input" inputmode="decimal" placeholder="Valor alvo" />
+            <input id="goalDate" class="input" type="date" />
+          </div>
+          <div class="goal-form" style="margin-top:8px">
+            <input id="goalCurrent" class="input" inputmode="decimal" placeholder="Já guardado" />
+            <input id="goalMonthly" class="input" inputmode="decimal" placeholder="Aporte mensal" />
+            <select id="goalPriority" class="input"><option value="alta">Prioridade alta</option><option value="media">Prioridade média</option><option value="baixa">Prioridade baixa</option></select>
+            <button id="addGoalBtn" class="btn btn-primary">Adicionar meta</button>
+          </div>
+          <div id="goalList" class="goal-list"></div>
+        </article>
+        <article class="card">
+          <div class="card-head"><div><h2>Simulador de futuro</h2><p>Projeção simples usando aporte mensal e rendimento estimado.</p></div></div>
+          <div class="scenario-grid">
+            <div class="field"><label>Aporte mensal (BRL)</label><input id="simMonthly" class="input" type="number" value="500" min="0" /></div>
+            <div class="field"><label>Prazo (anos)</label><input id="simYears" class="input" type="number" value="5" min="1" max="50" /></div>
+            <div class="field"><label>Rendimento anual (%)</label><input id="simRate" class="input" type="number" value="8" min="0" step="0.1" /></div>
+          </div>
+          <button id="simulateBtn" class="btn btn-primary" style="margin-top:8px">Calcular projeção</button>
+          <div style="margin-top:16px"><span class="muted">Patrimônio projetado</span><div id="simulationResult" class="scenario-result">R$ 0,00</div><p id="simulationDetail" class="muted" style="margin-top:5px"></p></div>
+          <div class="insight" style="margin-top:16px"><strong>Nota</strong><p class="muted" style="margin-top:5px">Esta é uma simulação matemática, não uma recomendação de investimento. Rentabilidade real varia e pode haver impostos, inflação e perdas.</p></div>
+        </article>
+      </div>
+    </section>
+  </main>
+  <div class="toast" id="toast"></div>
+</body>
+</html>
