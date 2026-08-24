@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <meta name="theme-color" content="#0b0f14" />
   <meta name="description" content="Gestão financeira pessoal multi-moeda em PYG e BRL com IndexedDB, analytics, importação CSV/JSON e PWA." />
-  <title>Projeto Finanças</title>
+  <title>Projeto Finanças | Brasil & Paraguai</title>
   <link rel="manifest" href="manifest.json" />
   <link rel="stylesheet" href="css/styles.css" />
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js" defer></script>
@@ -14,7 +14,7 @@
 <body>
   <div class="app-shell">
     <aside class="sidebar">
-      <div class="brand"><div class="brand-mark">PF</div><div><strong>Projeto Finanças</strong><small>Vanilla Data App</small></div></div>
+      <div class="brand"><div class="brand-mark">🇵🇾🇧🇷</div><div><strong>Projeto Finanças</strong><small>Brasil & Paraguai</small></div></div>
       <nav class="nav">
         <button class="nav-link active" data-view="dashboard">Dashboard</button>
         <button class="nav-link" data-view="transactions">Transações</button>
@@ -26,13 +26,13 @@
     </aside>
     <main class="main">
       <header class="topbar">
-        <div><p class="eyebrow">Gestão Financeira Multi-Moeda</p><h1 id="pageTitle">Dashboard</h1></div>
+        <div><p class="eyebrow">🇵🇾 🇧🇷 Controle financeiro Brasil & Paraguai</p><h1 id="pageTitle">Projeto Finanças</h1></div>
         <div class="topbar-actions"><button class="btn btn-secondary" id="quickImportBtn">Importação rápida</button><button class="btn btn-primary" id="newTransactionBtn">+ Nova transação</button></div>
       </header>
       <section class="view active" id="view-dashboard">
         <div class="summary-grid">
-          <article class="card metric-card"><span>Saldo em Guaranis</span><strong id="pygBalance">Gs. 0</strong><div class="metric-row"><small class="income" id="pygIncome">+ Gs. 0</small><small class="expense" id="pygExpense">- Gs. 0</small></div></article>
-          <article class="card metric-card"><span>Saldo em Reais</span><strong id="brlBalance">R$ 0,00</strong><div class="metric-row"><small class="income" id="brlIncome">+ R$ 0,00</small><small class="expense" id="brlExpense">- R$ 0,00</small></div></article>
+          <article class="card metric-card"><span>Saldo em Guaranis 🇵🇾</span><strong id="pygBalance">Gs. 0</strong><div class="metric-row"><small class="income" id="pygIncome">+ Gs. 0</small><small class="expense" id="pygExpense">- Gs. 0</small></div></article>
+          <article class="card metric-card"><span>Saldo em Reais 🇧🇷</span><strong id="brlBalance">R$ 0,00</strong><div class="metric-row"><small class="income" id="brlIncome">+ R$ 0,00</small><small class="expense" id="brlExpense">- R$ 0,00</small></div></article>
           <article class="card metric-card"><span>Patrimônio consolidado</span><strong id="consolidatedBalance">Gs. 0</strong><small id="rateStatus" class="muted">Cotação manual</small></article>
           <article class="card metric-card"><span>Gasto médio diário</span><strong id="dailyAverage">Gs. 0</strong><small class="muted" id="projectionText">Projeção mensal indisponível</small></article>
         </div>
