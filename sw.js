@@ -1,4 +1,4 @@
-const CACHE_NAME = "projeto-financas-v3";
+const CACHE_NAME = "projeto-financas-v4";
 const APP_SHELL = [
   "./", "./index.html", "./inteligencia.html", "./css/styles.css", "./js/app.js", "./js/db.js",
   "./js/utils.js", "./js/parser.js", "./js/charts.js", "./js/inteligencia.js",
@@ -21,7 +21,6 @@ self.addEventListener("activate", (event) => {
 self.addEventListener("fetch", (event) => {
   const request = event.request;
   if (request.method !== "GET") return;
-
   const url = new URL(request.url);
   if (url.pathname.includes("/api/financial-assistant")) return;
   if (url.origin !== self.location.origin) return;
