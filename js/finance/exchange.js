@@ -31,11 +31,7 @@ export function findHistoricalRate(date, rates = [], currentRate = 1300) {
 }
 
 export function transactionRateInfo(transaction, rates = [], currentRate = 1300) {
-  if (transaction.currency === "PYG") {
-    return { rate: 1, source: "original", approximate: false, rateDate: transaction.date };
-  }
-
-  if (Number(transaction.exchangeRateSnapshot) > 0) {
+  if (transaction.currency === "BRL" && Number(transaction.exchangeRateSnapshot) > 0) {
     return {
       rate: Number(transaction.exchangeRateSnapshot),
       source: "snapshot",
@@ -54,13 +50,20 @@ export function convertTransaction(transaction, targetCurrency, rates = [], curr
       amount,
       currency: targetCurrency,
       approximate: false,
-      rate: transaction.currency === "BRL" ? transactionRateInfo(transaction, rates, currentRate).rate : 1,
+      rate: transaction.currency === "BRL"
+        ? transactionRateInfo(transaction, rates, currentRate).rate
+        : 1,
       source: "original"
     };
   }
 
   const rateInfo = transactionRateInfo(transaction, rates, currentRate);
-  const converted = targetCurrency === "PYG" ? amount * rateInfo.rate : amount / rateInfo.rate;
+  const converted = transaction.currency === "BRL" && targetCurrency === "PYG"
+    ? amount * rateInfo.rate
+    : transaction.currency === "PYG" && targetCurrency === "BRL"
+      ? amount / rateInfo.rate
+      : amount;
+
   return {
     amount: converted,
     currency: targetCurrency,
