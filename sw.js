@@ -1,4 +1,4 @@
-const CACHE_NAME = "projeto-financas-v7";
+const CACHE_NAME = "projeto-financas-v8";
 
 const APP_SHELL = [
   "./",
@@ -18,6 +18,7 @@ const APP_SHELL = [
   "./js/parser.js",
   "./js/charts.js",
   "./js/inteligencia.js",
+  "./js/ai/account-context.js",
   "./js/ai/assistant.js",
   "./js/ai/intent-router.js",
   "./js/ai/local-engine.js",
@@ -45,18 +46,43 @@ const APP_SHELL = [
   "./js/data/backup-service.js"
 ];
 
-self.addEventListener("install", (event) => {
-  event.waitUntil(
-    caches.open(CACHE_NAME).then(async (cache) => {
-      for (const url of APP_SHELL) {
-        try {
-          await cache.add(url);
-        } catch {
-          // Um recurso opcional não deve impedir a instalação da PWA inteira.
-        }
-      }
+const SENSITIVE_PATHS = ["/api/financial-assistant", "/api/"];
+
+function isSensitiveOrExternal(url) {
+  return url.origin !== self.location.origin
+    || SENSITIVE_PATHS.some((path) => url.pathname.includes(path));
+}
+
+async function cacheShell() {
+  const cache = await caches.open(CACHE_NAME);
+  const results = await Promise.allSettled(
+    APP_SHELL.map(async (url) => {
+      const response = await fetch(url, { cache: "no-cache" });
+      if (!response.ok) throw new Error(`Falha ao pré-carregar ${url}: ${response.status}`);
+      await cache.put(url, response);
     })
   );
+
+  const critical = new Set([
+    "./index.html",
+    "./css/styles.css",
+    "./js/app.js",
+    "./js/db.js",
+    "./js/utils.js",
+    "./offline.html"
+  ]);
+
+  const failures = results
+    .map((result, index) => ({ result, url: APP_SHELL[index] }))
+    .filter(({ result, url }) => critical.has(url) && result.status === "rejected");
+
+  if (failures.length) {
+    throw new Error(`Falha ao instalar recursos essenciais: ${failures.map((item) => item.url).join(", ")}`);
+  }
+}
+
+self.addEventListener("install", (event) => {
+  event.waitUntil(cacheShell());
   self.skipWaiting();
 });
 
@@ -68,12 +94,6 @@ self.addEventListener("activate", (event) => {
   );
   self.clients.claim();
 });
-
-function isSensitiveOrExternal(url) {
-  return url.pathname.includes("/api/financial-assistant")
-    || url.pathname.includes("/api/")
-    || url.origin !== self.location.origin;
-}
 
 self.addEventListener("fetch", (event) => {
   const request = event.request;
@@ -87,26 +107,28 @@ self.addEventListener("fetch", (event) => {
       fetch(request)
         .then((response) => {
           if (response?.ok && response.type === "basic") {
-            caches.open(CACHE_NAME).then((cache) => cache.put(request, response.clone()));
+            event.waitUntil(
+              caches.open(CACHE_NAME).then((cache) => cache.put(request, response.clone()))
+            );
           }
           return response;
         })
-        .catch(async () => {
-          return (await caches.match(request))
-            || (await caches.match("./offline.html"));
-        })
+        .catch(async () => (await caches.match(request)) || caches.match("./offline.html"))
     );
     return;
   }
 
   event.respondWith(
-    caches.match(request).then((cached) => {
+    caches.match(request).then(async (cached) => {
       if (cached) return cached;
-      return fetch(request).then((response) => {
-        if (!response || !response.ok || response.type !== "basic") return response;
-        caches.open(CACHE_NAME).then((cache) => cache.put(request, response.clone()));
-        return response;
-      });
+
+      const response = await fetch(request);
+      if (response?.ok && response.type === "basic") {
+        event.waitUntil(
+          caches.open(CACHE_NAME).then((cache) => cache.put(request, response.clone()))
+        );
+      }
+      return response;
     })
   );
 });
