@@ -17,6 +17,7 @@ const CATEGORY_RULES = [
 
 const INCOME_PATTERN = /(recebi|receita|entrada|sal[aá]rio|ganhei|depósito|deposito|\+)/i;
 const VALUE_PATTERN = /-?\s*\d[\d.,]*/g;
+const MARKUP_PATTERN = /<[^>]*>/g;
 
 function normalizeFallbackCurrency(currency) {
   return SUPPORTED_CURRENCIES.has(currency) ? currency : "PYG";
@@ -65,6 +66,13 @@ function parseAmount(rawValue, currency) {
   return currency === "PYG" ? Math.round(amount) : Number(amount.toFixed(2));
 }
 
+function extractValueMatches(line) {
+  // Tags/atributos são tratados apenas como texto descritivo. Números dentro
+  // deles não podem criar lançamentos adicionais, por exemplo alert(1).
+  const searchable = line.replace(MARKUP_PATTERN, " ");
+  return searchable.match(VALUE_PATTERN) || [];
+}
+
 export function parseSmartInput(text, fallbackCurrency = "PYG") {
   const lines = String(text || "")
     .split(/\r?\n+/)
@@ -83,7 +91,7 @@ export function parseSmartInput(text, fallbackCurrency = "PYG") {
 
     const currency = inferCurrency(line, sectionCurrency);
     const type = inferType(line);
-    const matches = line.match(VALUE_PATTERN) || [];
+    const matches = extractValueMatches(line);
 
     for (const match of matches) {
       const amount = parseAmount(match, currency);
