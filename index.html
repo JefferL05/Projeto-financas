@@ -4,7 +4,8 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <meta name="theme-color" content="#0b0f14" />
-  <meta name="description" content="Gestão financeira pessoal multi-moeda em PYG e BRL com IndexedDB, analytics, importação CSV/JSON e PWA." />
+  <meta name="description" content="Gestão financeira pessoal multi-moeda em PYG e BRL, local-first e compatível com PWA." />
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://cdn.jsdelivr.net; style-src 'self'; img-src 'self' data:; connect-src 'self' https://economia.awesomeapi.com.br; object-src 'none'; base-uri 'self'; frame-ancestors 'none'; form-action 'self';" />
   <title>Projeto Finanças | Brasil & Paraguai</title>
   <link rel="manifest" href="manifest.json" />
   <link rel="stylesheet" href="css/styles.css" />
@@ -14,59 +15,159 @@
 <body>
   <div class="app-shell">
     <aside class="sidebar">
-      <div class="brand"><div class="brand-mark">🇵🇾🇧🇷</div><div><strong>Projeto Finanças</strong><small>Brasil & Paraguai</small></div></div>
-      <nav class="nav">
-        <button class="nav-link active" data-view="dashboard">Dashboard</button>
+      <div class="brand">
+        <div class="brand-mark">🇵🇾🇧🇷</div>
+        <div><strong>Projeto Finanças</strong><small>Brasil & Paraguai</small></div>
+      </div>
+      <nav class="nav" aria-label="Navegação principal">
+        <button class="nav-link active" data-view="dashboard" aria-current="page">Dashboard</button>
         <button class="nav-link" data-view="transactions">Transações</button>
         <button class="nav-link" data-view="analytics">Analytics</button>
-        <a class="nav-link" href="inteligencia.html#ia" style="text-decoration:none">🤖 Assistente IA</a>
-        <a class="nav-link" href="inteligencia.html#planejamento" style="text-decoration:none">🎯 Longo Prazo</a>
+        <a class="nav-link nav-anchor" href="gestao.html">🏦 Contas & Planejamento</a>
+        <a class="nav-link nav-anchor" href="inteligencia.html#ia">🤖 Assistente IA</a>
+        <a class="nav-link nav-anchor" href="inteligencia.html#planejamento">🎯 Longo Prazo</a>
         <button class="nav-link" data-view="data">Dados & Backup</button>
         <button class="nav-link" data-view="settings">Configurações</button>
       </nav>
-      <div class="sidebar-footer"><span id="storageStatus">IndexedDB</span><span id="onlineStatus">Online</span></div>
+      <div class="sidebar-footer"><span id="storageStatus">IndexedDB v6</span><span id="onlineStatus">Online</span></div>
     </aside>
+
     <main class="main">
       <header class="topbar">
-        <div><p class="eyebrow">🇵🇾 🇧🇷 Controle financeiro Brasil & Paraguai</p><h1 id="pageTitle">Projeto Finanças</h1></div>
-        <div class="topbar-actions"><a class="btn btn-secondary" href="inteligencia.html#ia" style="text-decoration:none">🤖 IA</a><a class="btn btn-secondary" href="inteligencia.html#planejamento" style="text-decoration:none">🎯 Planejamento</a><button class="btn btn-secondary" id="quickImportBtn">Importação rápida</button><button class="btn btn-primary" id="newTransactionBtn">+ Nova transação</button></div>
-      </header>
-      <section class="view active" id="view-dashboard">
-        <div class="summary-grid">
-          <article class="card metric-card"><span>Saldo em Guaranis 🇵🇾</span><strong id="pygBalance">Gs. 0</strong><div class="metric-row"><small class="income" id="pygIncome">+ Gs. 0</small><small class="expense" id="pygExpense">- Gs. 0</small></div></article>
-          <article class="card metric-card"><span>Saldo em Reais 🇧🇷</span><strong id="brlBalance">R$ 0,00</strong><div class="metric-row"><small class="income" id="brlIncome">+ R$ 0,00</small><small class="expense" id="brlExpense">- R$ 0,00</small></div></article>
-          <article class="card metric-card"><span>Patrimônio consolidado</span><strong id="consolidatedBalance">Gs. 0</strong><small id="rateStatus" class="muted">Cotação manual</small></article>
-          <article class="card metric-card"><span>Gasto médio diário</span><strong id="dailyAverage">Gs. 0</strong><small class="muted" id="projectionText">Projeção mensal indisponível</small></article>
+        <div>
+          <p class="eyebrow">🇵🇾 🇧🇷 Controle financeiro Brasil & Paraguai</p>
+          <h1 id="pageTitle">Dashboard</h1>
         </div>
+        <div class="topbar-actions">
+          <a class="btn btn-secondary nav-anchor" href="gestao.html">🏦 Contas</a>
+          <a class="btn btn-secondary nav-anchor" href="inteligencia.html#ia">🤖 IA</a>
+          <button class="btn btn-secondary" id="quickImportBtn">Importação rápida</button>
+          <button class="btn btn-primary" id="newTransactionBtn">+ Nova transação</button>
+        </div>
+      </header>
+
+      <section class="view active" id="view-dashboard">
+        <div class="summary-grid dashboard-summary-grid">
+          <article class="card metric-card">
+            <span>Patrimônio líquido</span>
+            <strong id="netWorthBalance">—</strong>
+            <small class="muted">Ativos menos dívidas</small>
+          </article>
+          <article class="card metric-card">
+            <span>Dinheiro disponível</span>
+            <strong id="availableBalance">—</strong>
+            <small class="muted">Contas líquidas no orçamento</small>
+          </article>
+          <article class="card metric-card">
+            <span>Fluxo líquido do mês</span>
+            <strong id="consolidatedBalance">—</strong>
+            <small id="rateStatus" class="muted">Receitas menos despesas</small>
+          </article>
+          <article class="card metric-card">
+            <span>Gasto médio diário</span>
+            <strong id="dailyAverage">—</strong>
+            <small class="muted" id="projectionText">Projeção mensal indisponível</small>
+          </article>
+          <article class="card metric-card">
+            <span>Movimentação em Guaranis 🇵🇾</span>
+            <strong id="pygBalance">Gs. 0</strong>
+            <div class="metric-row"><small class="income" id="pygIncome">+ Gs. 0</small><small class="expense" id="pygExpense">- Gs. 0</small></div>
+          </article>
+          <article class="card metric-card">
+            <span>Movimentação em Reais 🇧🇷</span>
+            <strong id="brlBalance">R$ 0,00</strong>
+            <div class="metric-row"><small class="income" id="brlIncome">+ R$ 0,00</small><small class="expense" id="brlExpense">- R$ 0,00</small></div>
+          </article>
+        </div>
+
         <div class="chart-grid">
           <article class="card"><div class="card-head"><div><h2>Fluxo de caixa</h2><p>Entradas e saídas dos últimos 6 meses</p></div></div><div class="chart-wrap"><canvas id="cashflowChart"></canvas></div></article>
           <article class="card"><div class="card-head"><div><h2>Gastos por categoria</h2><p>Distribuição do mês atual</p></div></div><div class="chart-wrap"><canvas id="categoryChart"></canvas></div></article>
         </div>
-        <article class="card"><div class="card-head"><div><h2>Transações recentes</h2><p>Últimos lançamentos registrados</p></div><button class="link-btn" data-view-jump="transactions">Ver todas</button></div><div id="recentTransactions" class="transaction-list"></div></article>
+
+        <article class="card">
+          <div class="card-head"><div><h2>Transações recentes</h2><p>Últimos lançamentos registrados</p></div><button class="link-btn" data-view-jump="transactions">Ver todas</button></div>
+          <div id="recentTransactions" class="transaction-list"></div>
+        </article>
       </section>
+
       <section class="view" id="view-transactions">
-        <article class="card"><div class="filters-grid"><input class="input" id="searchInput" placeholder="Buscar descrição..." /><input class="input" id="filterMonth" type="month" /><select class="input" id="filterType"><option value="">Todos os tipos</option><option value="income">Entradas</option><option value="expense">Saídas</option></select><select class="input" id="filterCurrency"><option value="">Todas as moedas</option><option value="PYG">PYG</option><option value="BRL">BRL</option></select><select class="input" id="filterCategory"><option value="">Todas as categorias</option></select></div></article>
-        <article class="card"><div class="card-head"><div><h2>Histórico</h2><p id="transactionCount">0 transações</p></div></div><div id="transactionsList" class="transaction-list"></div></article>
+        <article class="card">
+          <div class="filters-grid filters-grid-accounts">
+            <input class="input" id="searchInput" aria-label="Buscar transação" placeholder="Buscar descrição..." />
+            <input class="input" id="filterMonth" aria-label="Filtrar por mês" type="month" />
+            <select class="input" id="filterType" aria-label="Filtrar por tipo"><option value="">Todos os tipos</option><option value="income">Entradas</option><option value="expense">Saídas</option><option value="transfer">Transferências</option></select>
+            <select class="input" id="filterCurrency" aria-label="Filtrar por moeda"><option value="">Todas as moedas</option><option value="PYG">PYG</option><option value="BRL">BRL</option></select>
+            <select class="input" id="filterCategory" aria-label="Filtrar por categoria"><option value="">Todas as categorias</option></select>
+            <select class="input" id="filterAccount" aria-label="Filtrar por conta"><option value="">Todas as contas</option></select>
+          </div>
+        </article>
+        <article class="card">
+          <div class="card-head"><div><h2>Histórico</h2><p id="transactionCount">0 transações</p></div></div>
+          <div id="transactionsList" class="transaction-list"></div>
+        </article>
       </section>
+
       <section class="view" id="view-analytics">
-        <div class="analytics-grid"><article class="card stat-card"><span>Maior categoria</span><strong id="topCategory">—</strong></article><article class="card stat-card"><span>Maior gasto</span><strong id="largestExpense">—</strong></article><article class="card stat-card"><span>Taxa de poupança</span><strong id="savingsRate">0%</strong></article><article class="card stat-card"><span>Projeção fim do mês</span><strong id="monthProjection">—</strong></article></div>
-        <div class="chart-grid"><article class="card"><div class="card-head"><div><h2>Evolução do patrimônio</h2><p>Saldo acumulado consolidado</p></div></div><div class="chart-wrap"><canvas id="balanceChart"></canvas></div></article><article class="card"><div class="card-head"><div><h2>Ranking de categorias</h2><p>Top 8 gastos do período</p></div></div><div id="categoryRanking" class="ranking-list"></div></article></div>
+        <div class="analytics-grid">
+          <article class="card stat-card"><span>Maior categoria</span><strong id="topCategory">—</strong></article>
+          <article class="card stat-card"><span>Maior gasto</span><strong id="largestExpense">—</strong></article>
+          <article class="card stat-card"><span>Taxa de poupança</span><strong id="savingsRate">—</strong></article>
+          <article class="card stat-card"><span>Projeção fim do mês</span><strong id="monthProjection">—</strong></article>
+        </div>
+        <div class="chart-grid">
+          <article class="card"><div class="card-head"><div><h2>Evolução do patrimônio estimado</h2><p>Histórico de saldos acumulados; contas atuais definem o patrimônio real.</p></div></div><div class="chart-wrap"><canvas id="balanceChart"></canvas></div></article>
+          <article class="card"><div class="card-head"><div><h2>Ranking de categorias</h2><p>Top 8 gastos do período</p></div></div><div id="categoryRanking" class="ranking-list"></div></article>
+        </div>
       </section>
+
       <section class="view" id="view-data">
         <div class="data-grid">
-          <article class="card"><h2>Backup completo</h2><p class="muted">Exporta transações, categorias, configurações e histórico de câmbio.</p><div class="button-stack"><button class="btn btn-primary" id="exportJsonBtn">Exportar JSON</button><label class="btn btn-secondary file-label">Importar JSON<input type="file" id="importJsonInput" accept=".json,application/json" hidden /></label></div></article>
-          <article class="card"><h2>Planilhas</h2><p class="muted">Use CSV para Excel, Google Sheets ou outros sistemas.</p><div class="button-stack"><button class="btn btn-primary" id="exportCsvBtn">Exportar CSV</button><label class="btn btn-secondary file-label">Importar CSV<input type="file" id="importCsvInput" accept=".csv,text/csv" hidden /></label></div></article>
-          <article class="card"><h2>Banco local</h2><p class="muted">IndexedDB com índices por data, moeda, tipo e categoria.</p><dl class="db-stats"><div><dt>Transações</dt><dd id="dbTransactions">0</dd></div><div><dt>Categorias</dt><dd id="dbCategories">0</dd></div><div><dt>Cotações salvas</dt><dd id="dbRates">0</dd></div></dl></article>
+          <article class="card"><h2>Backup completo</h2><p class="muted">Inclui transações, contas, metas, orçamentos, compromissos, regras, configurações e cotações.</p><div class="button-stack"><button class="btn btn-primary" id="exportJsonBtn">Exportar JSON</button><label class="btn btn-secondary file-label">Importar JSON<input type="file" id="importJsonInput" accept=".json,application/json" hidden /></label></div></article>
+          <article class="card"><h2>Planilhas</h2><p class="muted">Exporte transações para Excel ou Google Sheets.</p><div class="button-stack"><button class="btn btn-primary" id="exportCsvBtn">Exportar CSV</button><label class="btn btn-secondary file-label">Importar CSV<input type="file" id="importCsvInput" accept=".csv,text/csv" hidden /></label></div></article>
+          <article class="card"><h2>Banco local</h2><p class="muted">IndexedDB v6 com contas, transferências e planejamento.</p><dl class="db-stats"><div><dt>Transações</dt><dd id="dbTransactions">0</dd></div><div><dt>Contas</dt><dd id="dbAccounts">0</dd></div><div><dt>Compromissos</dt><dd id="dbSchedules">0</dd></div><div><dt>Categorias</dt><dd id="dbCategories">0</dd></div><div><dt>Cotações</dt><dd id="dbRates">0</dd></div></dl></article>
           <article class="card danger-card"><h2>Zona de risco</h2><p class="muted">Apaga todos os dados locais deste navegador.</p><button class="btn btn-danger" id="clearDatabaseBtn">Limpar banco local</button></article>
         </div>
       </section>
+
       <section class="view" id="view-settings">
-        <div class="settings-grid"><article class="card"><h2>Câmbio</h2><div class="field"><label>1 BRL em PYG</label><input class="input" id="exchangeRate" type="number" min="1" step="1" /></div><div class="field"><label>Moeda base</label><select class="input" id="baseCurrency"><option value="PYG">Guarani (PYG)</option><option value="BRL">Real (BRL)</option></select></div><div class="button-stack"><button class="btn btn-secondary" id="fetchRateBtn">Buscar cotação online</button><button class="btn btn-primary" id="saveSettingsBtn">Salvar configurações</button></div></article><article class="card"><h2>Categorias</h2><div class="inline-form"><input class="input" id="newCategoryInput" placeholder="Nova categoria" /><button class="btn btn-primary" id="addCategoryBtn">Adicionar</button></div><div id="categoryManager" class="chip-list"></div></article></div>
+        <div class="settings-grid">
+          <article class="card"><h2>Câmbio</h2><div class="field"><label for="exchangeRate">1 BRL em PYG</label><input class="input" id="exchangeRate" type="number" min="1" step="1" /></div><div class="field"><label for="baseCurrency">Moeda base</label><select class="input" id="baseCurrency"><option value="PYG">Guarani (PYG)</option><option value="BRL">Real (BRL)</option></select></div><div class="button-stack"><button class="btn btn-secondary" id="fetchRateBtn">Buscar cotação online</button><button class="btn btn-primary" id="saveSettingsBtn">Salvar configurações</button></div></article>
+          <article class="card"><h2>Categorias</h2><div class="inline-form"><input class="input" id="newCategoryInput" maxlength="60" placeholder="Nova categoria" /><button class="btn btn-primary" id="addCategoryBtn">Adicionar</button></div><div id="categoryManager" class="chip-list"></div></article>
+        </div>
       </section>
     </main>
   </div>
-  <dialog id="transactionDialog" class="dialog"><form method="dialog" class="dialog-card" id="transactionForm"><div class="dialog-head"><div><h2 id="transactionDialogTitle">Nova transação</h2><p>Preencha os dados do lançamento.</p></div><button class="icon-btn" value="cancel" aria-label="Fechar">×</button></div><input type="hidden" id="transactionId" /><div class="segmented"><button type="button" data-tx-type="expense" class="active expense-tab">Saída</button><button type="button" data-tx-type="income" class="income-tab">Entrada</button></div><div class="form-grid"><div class="field"><label>Moeda</label><select class="input" id="txCurrency" required><option value="PYG">Guarani (PYG)</option><option value="BRL">Real (BRL)</option></select></div><div class="field"><label>Valor</label><input class="input" id="txAmount" inputmode="decimal" placeholder="83.467 ou 22,50" required /></div><div class="field"><label>Categoria</label><select class="input" id="txCategory" required></select></div><div class="field"><label>Data</label><input class="input" id="txDate" type="date" required /></div></div><div class="field"><label>Descrição</label><input class="input" id="txDescription" placeholder="Ex.: Maxi, gasolina, salário..." /></div><div class="field"><label>Tags</label><input class="input" id="txTags" placeholder="Ex.: trabalho, casa, viagem" /></div><div class="dialog-actions"><button class="btn btn-secondary" value="cancel">Cancelar</button><button class="btn btn-primary" id="saveTransactionBtn" value="default">Salvar</button></div></form></dialog>
-  <dialog id="smartImportDialog" class="dialog"><form method="dialog" class="dialog-card large"><div class="dialog-head"><div><h2>Importação rápida</h2><p>Cole anotações brutas e deixe o parser sugerir lançamentos.</p></div><button class="icon-btn" value="cancel">×</button></div><div class="inline-form"><select class="input compact" id="smartDefaultCurrency"><option value="PYG">Gs.</option><option value="BRL">R$</option></select><span class="muted">Moeda padrão para linhas sem identificação.</span></div><textarea id="smartInput" class="input textarea" placeholder="-83.467 mercado\n-69.598 mercado\n-90.000 almoço\n-18.000 Maxi\n\nRecebi 420 reais\n-100 gasolina\n-22,50"></textarea><div id="smartSuggestions" class="smart-suggestions"></div><div class="dialog-actions"><button class="btn btn-secondary" value="cancel">Fechar</button><button class="btn btn-primary" id="importSmartBtn" type="button">Importar sugestões</button></div></form></dialog>
+
+  <dialog id="transactionDialog" class="dialog" aria-labelledby="transactionDialogTitle">
+    <form method="dialog" class="dialog-card" id="transactionForm">
+      <div class="dialog-head"><div><h2 id="transactionDialogTitle">Nova transação</h2><p>Preencha os dados do lançamento.</p></div><button class="icon-btn" value="cancel" aria-label="Fechar">×</button></div>
+      <input type="hidden" id="transactionId" />
+      <div class="segmented"><button type="button" data-tx-type="expense" class="active expense-tab">Saída</button><button type="button" data-tx-type="income" class="income-tab">Entrada</button></div>
+      <div class="form-grid">
+        <div class="field"><label for="txAccount">Conta</label><select class="input" id="txAccount" required></select></div>
+        <div class="field"><label for="txCurrency">Moeda</label><select class="input" id="txCurrency" required><option value="PYG">Guarani (PYG)</option><option value="BRL">Real (BRL)</option></select></div>
+        <div class="field"><label for="txAmount">Valor</label><input class="input" id="txAmount" inputmode="decimal" placeholder="83.467 ou 22,50" required /></div>
+        <div class="field"><label for="txCategory">Categoria</label><select class="input" id="txCategory" required></select></div>
+        <div class="field"><label for="txDate">Data</label><input class="input" id="txDate" type="date" required /></div>
+        <div class="field"><label for="txStatus">Status</label><select class="input" id="txStatus"><option value="pending">Pendente</option><option value="cleared" selected>Conferida</option><option value="reconciled">Conciliada</option></select></div>
+      </div>
+      <div class="field"><label for="txDescription">Descrição</label><input class="input" id="txDescription" maxlength="160" placeholder="Ex.: Maxi, gasolina, salário..." /></div>
+      <div class="field"><label for="txTags">Tags</label><input class="input" id="txTags" maxlength="240" placeholder="Ex.: trabalho, casa, viagem" /></div>
+      <div class="dialog-actions"><button class="btn btn-secondary" value="cancel">Cancelar</button><button class="btn btn-primary" id="saveTransactionBtn" value="default">Salvar</button></div>
+    </form>
+  </dialog>
+
+  <dialog id="smartImportDialog" class="dialog" aria-labelledby="smartImportTitle">
+    <form method="dialog" class="dialog-card large">
+      <div class="dialog-head"><div><h2 id="smartImportTitle">Importação rápida</h2><p>Cole anotações brutas e revise as sugestões.</p></div><button class="icon-btn" value="cancel" aria-label="Fechar">×</button></div>
+      <div class="inline-form"><select class="input compact" id="smartDefaultCurrency"><option value="PYG">Gs.</option><option value="BRL">R$</option></select><span class="muted">Moeda padrão para linhas sem identificação.</span></div>
+      <textarea id="smartInput" class="input textarea" maxlength="12000" placeholder="-83.467 mercado\n-69.598 mercado\n-90.000 almoço\n\nRecebi 420 reais\n-100 gasolina"></textarea>
+      <div id="smartSuggestions" class="smart-suggestions"></div>
+      <div class="dialog-actions"><button class="btn btn-secondary" value="cancel">Fechar</button><button class="btn btn-primary" id="importSmartBtn" type="button">Importar sugestões</button></div>
+    </form>
+  </dialog>
+
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
 </body>
 </html>
