@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#0b0f14" />
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self' https://economia.awesomeapi.com.br; object-src 'none'; base-uri 'self'; frame-ancestors 'none'; form-action 'self';" />
+  <title>Contas & Planejamento | Projeto Finanças</title>
+  <link rel="manifest" href="manifest.json" />
+  <link rel="stylesheet" href="css/styles.css" />
+  <script type="module" src="js/gestao.js"></script>
+</head>
+<body>
+  <main class="main standalone-main">
+    <header class="topbar">
+      <div>
+        <p class="eyebrow">🇵🇾 🇧🇷 Projeto Finanças</p>
+        <h1>Contas & Planejamento</h1>
+        <p class="muted">Contas manuais, transferências, conciliação e compromissos futuros.</p>
+      </div>
+      <div class="topbar-actions">
+        <a class="btn btn-secondary" href="index.html">Dashboard</a>
+        <a class="btn btn-secondary" href="inteligencia.html">Assistente</a>
+      </div>
+    </header>
+
+    <nav class="tabs safe-tabs" aria-label="Seções de gestão">
+      <button class="tab-btn active" data-tab="accounts" aria-current="page">Contas</button>
+      <button class="tab-btn" data-tab="transfer">Transferir</button>
+      <button class="tab-btn" data-tab="reconcile">Conciliação</button>
+      <button class="tab-btn" data-tab="schedules">Compromissos</button>
+      <button class="tab-btn" data-tab="reports">Resumo</button>
+    </nav>
+
+    <section class="intel-view active" id="tab-accounts">
+      <div class="summary-grid account-summary-grid">
+        <article class="card metric-card"><span>Patrimônio líquido</span><strong id="netWorthValue">—</strong><small class="muted">Ativos menos passivos</small></article>
+        <article class="card metric-card"><span>Dinheiro disponível</span><strong id="availableValue">—</strong><small class="muted">Contas líquidas incluídas no orçamento</small></article>
+        <article class="card metric-card"><span>Contas ativas</span><strong id="activeAccountsCount">0</strong><small class="muted">Sem integração bancária</small></article>
+      </div>
+
+      <div class="settings-grid">
+        <article class="card">
+          <div class="card-head"><div><h2>Nova conta manual</h2><p>Cadastre saldos que você controla.</p></div></div>
+          <form id="accountForm">
+            <div class="form-grid">
+              <div class="field"><label for="accountName">Nome</label><input id="accountName" class="input" required maxlength="80" /></div>
+              <div class="field"><label for="accountType">Tipo</label><select id="accountType" class="input"></select></div>
+              <div class="field"><label for="accountCurrency">Moeda</label><select id="accountCurrency" class="input"><option value="BRL">BRL</option><option value="PYG">PYG</option></select></div>
+              <div class="field"><label for="accountOpening">Saldo inicial</label><input id="accountOpening" class="input" inputmode="decimal" value="0" /></div>
+            </div>
+            <label class="check-row"><input id="accountOnBudget" type="checkbox" checked /> Incluir no dinheiro disponível/orçamento</label>
+            <label class="check-row"><input id="accountNetWorth" type="checkbox" checked /> Incluir no patrimônio líquido</label>
+            <button class="btn btn-primary" type="submit">Criar conta</button>
+          </form>
+        </article>
+
+        <article class="card">
+          <div class="card-head"><div><h2>Suas contas</h2><p>Saldo total, conciliado e status.</p></div></div>
+          <div id="accountsList" class="transaction-list" aria-live="polite"></div>
+        </article>
+      </div>
+    </section>
+
+    <section class="intel-view" id="tab-transfer">
+      <article class="card narrow-card">
+        <div class="card-head"><div><h2>Nova transferência</h2><p>Duas movimentações vinculadas e gravadas atomicamente.</p></div></div>
+        <form id="transferForm">
+          <div class="form-grid">
+            <div class="field"><label for="transferSource">Conta de origem</label><select id="transferSource" class="input" required></select></div>
+            <div class="field"><label for="transferDestination">Conta de destino</label><select id="transferDestination" class="input" required></select></div>
+            <div class="field"><label for="transferSourceAmount">Valor de origem</label><input id="transferSourceAmount" class="input" inputmode="decimal" required /></div>
+            <div class="field"><label for="transferDestinationAmount">Valor de destino</label><input id="transferDestinationAmount" class="input" inputmode="decimal" required /></div>
+            <div class="field"><label for="transferRate">Cotação, se moedas diferentes</label><input id="transferRate" class="input" inputmode="decimal" /></div>
+            <div class="field"><label for="transferDate">Data</label><input id="transferDate" class="input" type="date" required /></div>
+          </div>
+          <div class="field"><label for="transferDescription">Descrição</label><input id="transferDescription" class="input" value="Transferência entre contas" /></div>
+          <button class="btn btn-primary" type="submit">Revisar transferência</button>
+        </form>
+        <div id="transferPreview" class="confirmation-box hidden" aria-live="polite"></div>
+      </article>
+    </section>
+
+    <section class="intel-view" id="tab-reconcile">
+      <article class="card narrow-card">
+        <div class="card-head"><div><h2>Conciliação manual</h2><p>Compare o saldo da conta com o saldo informado pela instituição.</p></div></div>
+        <div class="field"><label for="reconcileAccount">Conta</label><select id="reconcileAccount" class="input"></select></div>
+        <div class="field"><label for="statementBalance">Saldo apresentado</label><input id="statementBalance" class="input" inputmode="decimal" /></div>
+        <div class="metric-row reconciliation-row"><span>Saldo conferido: <strong id="clearedBalance">—</strong></span><span>Diferença: <strong id="reconciliationDifference">—</strong></span></div>
+        <div id="reconcileTransactions" class="transaction-list reconcile-list"></div>
+        <label class="check-row"><input id="createReconciliationAdjustment" type="checkbox" /> Criar ajuste identificado se houver diferença</label>
+        <button id="finishReconciliationBtn" class="btn btn-primary">Concluir conciliação</button>
+      </article>
+    </section>
+
+    <section class="intel-view" id="tab-schedules">
+      <div class="settings-grid">
+        <article class="card">
+          <div class="card-head"><div><h2>Novo compromisso</h2><p>Conta futura, assinatura, receita ou parcela.</p></div></div>
+          <form id="scheduleForm">
+            <div class="form-grid">
+              <div class="field"><label for="scheduleName">Nome</label><input id="scheduleName" class="input" required /></div>
+              <div class="field"><label for="scheduleKind">Tipo</label><select id="scheduleKind" class="input"><option value="expense">Despesa</option><option value="income">Receita</option><option value="subscription">Assinatura</option><option value="installment">Parcela</option><option value="future">Pagamento futuro</option></select></div>
+              <div class="field"><label for="scheduleAccount">Conta</label><select id="scheduleAccount" class="input" required></select></div>
+              <div class="field"><label for="scheduleAmount">Valor</label><input id="scheduleAmount" class="input" inputmode="decimal" required /></div>
+              <div class="field"><label for="scheduleCategory">Categoria</label><select id="scheduleCategory" class="input"></select></div>
+              <div class="field"><label for="scheduleDueDate">Próximo vencimento</label><input id="scheduleDueDate" class="input" type="date" required /></div>
+              <div class="field"><label for="scheduleFrequency">Frequência</label><select id="scheduleFrequency" class="input"><option value="once">Única</option><option value="weekly">Semanal</option><option value="monthly">Mensal</option><option value="yearly">Anual</option></select></div>
+              <div class="field"><label for="scheduleReminder">Lembrar antes (dias)</label><input id="scheduleReminder" class="input" type="number" min="0" max="90" value="3" /></div>
+            </div>
+            <button class="btn btn-primary" type="submit">Adicionar compromisso</button>
+          </form>
+        </article>
+
+        <article class="card">
+          <div class="card-head"><div><h2>Próximos compromissos</h2><p>Não são executados enquanto o app estiver fechado.</p></div><button id="exportIcsBtn" class="btn btn-secondary">Exportar .ics</button></div>
+          <div id="scheduleGroups" aria-live="polite"></div>
+        </article>
+      </div>
+    </section>
+
+    <section class="intel-view" id="tab-reports">
+      <div class="summary-grid account-summary-grid">
+        <article class="card metric-card"><span>Fluxo líquido do mês</span><strong id="monthlyFlow">—</strong><small class="muted">Receitas menos despesas</small></article>
+        <article class="card metric-card"><span>Compromissos próximos</span><strong id="upcomingCommitments">—</strong><small class="muted">Próximos 30 dias</small></article>
+        <article class="card metric-card"><span>Valor potencialmente disponível</span><strong id="safeSpendValue">—</strong><small id="safeSpendNote" class="muted">Estimativa, quando houver dados suficientes</small></article>
+      </div>
+      <article class="card">
+        <div class="card-head"><div><h2>Resumo por conta</h2><p>Patrimônio e saldos sem chamar fluxo mensal de patrimônio.</p></div></div>
+        <div id="accountReportList" class="transaction-list"></div>
+      </article>
+    </section>
+  </main>
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+</body>
+</html>
