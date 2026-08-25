@@ -1,5 +1,5 @@
 const DB_NAME = "ProjetoFinancasDB";
-const DB_VERSION = 4;
+const DB_VERSION = 5;
 let dbPromise;
 
 export function openDB() {
@@ -17,9 +17,12 @@ export function openDB() {
         store.createIndex("type", "type", { unique: false });
         store.createIndex("category", "category", { unique: false });
         store.createIndex("createdAt", "createdAt", { unique: false });
-      } else if (event.oldVersion < 2) {
+      } else {
         const store = tx.objectStore("transactions");
         if (!store.indexNames.contains("category")) store.createIndex("category", "category", { unique: false });
+        if (!store.indexNames.contains("date")) store.createIndex("date", "date", { unique: false });
+        if (!store.indexNames.contains("currency")) store.createIndex("currency", "currency", { unique: false });
+        if (!store.indexNames.contains("type")) store.createIndex("type", "type", { unique: false });
       }
 
       if (!db.objectStoreNames.contains("settings")) db.createObjectStore("settings", { keyPath: "key" });
@@ -36,9 +39,17 @@ export function openDB() {
         goals.createIndex("priority", "priority", { unique: false });
         goals.createIndex("currency", "currency", { unique: false });
       }
+
+      if (!db.objectStoreNames.contains("budgets")) {
+        const budgets = db.createObjectStore("budgets", { keyPath: "id" });
+        budgets.createIndex("period", "period", { unique: false });
+        budgets.createIndex("category", "category", { unique: false });
+        budgets.createIndex("currency", "currency", { unique: false });
+      }
     };
     request.onsuccess = () => resolve(request.result);
     request.onerror = () => reject(request.error);
+    request.onblocked = () => console.warn("Atualização do banco aguardando fechamento de outra aba.");
   });
   return dbPromise;
 }
@@ -94,7 +105,7 @@ export async function clearStore(storeName) {
 }
 
 export async function clearDatabaseData() {
-  for (const store of ["transactions", "settings", "categories", "exchangeRates", "goals"]) {
+  for (const store of ["transactions", "settings", "categories", "exchangeRates", "goals", "budgets"]) {
     await clearStore(store);
   }
 }
