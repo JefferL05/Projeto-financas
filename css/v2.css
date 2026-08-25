@@ -1,0 +1,67 @@
+.nav-anchor {
+  text-decoration: none;
+  display: block;
+}
+
+.dashboard-summary-grid {
+  grid-template-columns: 1fr;
+}
+
+.filters-grid-accounts {
+  grid-template-columns: 1fr;
+}
+
+.btn,
+.nav-link,
+.input,
+.link-btn,
+.transaction-actions button {
+  min-height: 42px;
+}
+
+.nav-link:focus-visible,
+.btn:focus-visible,
+.input:focus-visible,
+.link-btn:focus-visible,
+button:focus-visible,
+a:focus-visible {
+  outline: 3px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.transaction-actions button {
+  padding: 7px 4px;
+}
+
+@media (min-width: 720px) {
+  .dashboard-summary-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .filters-grid-accounts {
+    grid-template-columns: 2fr 1fr 1fr;
+  }
+}
+
+@media (min-width: 1050px) {
+  .dashboard-summary-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .filters-grid-accounts {
+    grid-template-columns: 2fr repeat(5, minmax(120px, 1fr));
+  }
+}
+
+@media (max-width: 1049px) {
+  .topbar-actions {
+    position: sticky;
+    bottom: 8px;
+    z-index: 7;
+    padding: 7px;
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    background: rgba(11, 15, 20, 0.94);
+    backdrop-filter: blur(8px);
+  }
+}
