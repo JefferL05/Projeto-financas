@@ -1,9 +1,26 @@
 {
-  "name": "Projeto Finanças",
+  "id": "./",
+  "name": "Projeto Finanças — Brasil & Paraguai",
   "short_name": "Finanças",
-  "start_url": "./",
+  "description": "Gestão financeira pessoal local-first em Reais e Guaranis.",
+  "lang": "pt-BR",
+  "start_url": "./index.html",
+  "scope": "./",
   "display": "standalone",
+  "orientation": "any",
   "background_color": "#0b0f14",
   "theme_color": "#0b0f14",
-  "description": "Gestão financeira pessoal multi-moeda."
+  "categories": ["finance", "productivity"],
+  "shortcuts": [
+    {
+      "name": "Contas & Planejamento",
+      "short_name": "Contas",
+      "url": "./gestao.html"
+    },
+    {
+      "name": "Assistente Financeiro",
+      "short_name": "Assistente",
+      "url": "./inteligencia.html#ia"
+    }
+  ]
 }
