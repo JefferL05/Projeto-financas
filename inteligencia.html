@@ -5,12 +5,11 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <meta name="theme-color" content="#0b0f14" />
   <meta name="description" content="Assistente financeiro híbrido, metas e orçamentos do Projeto Finanças." />
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self' https:; object-src 'none'; base-uri 'self'; frame-ancestors 'none'; form-action 'self';" />
   <title>IA & Planejamento | Projeto Finanças</title>
   <link rel="manifest" href="manifest.json" />
   <link rel="stylesheet" href="css/styles.css" />
-  <style>
-    .intel-shell{max-width:1180px;margin:0 auto;padding:22px 14px 50px}.intel-top{display:flex;gap:12px;align-items:center;justify-content:space-between;flex-wrap:wrap;margin-bottom:16px}.back-link{color:var(--text);text-decoration:none;background:var(--panel2);border:1px solid var(--border);padding:9px 12px;border-radius:11px}.tabs{display:flex;gap:8px;overflow:auto;margin-bottom:14px;padding-bottom:3px}.tab-btn{border:1px solid var(--border);background:var(--panel2);color:var(--muted);padding:10px 13px;border-radius:12px;white-space:nowrap}.tab-btn.active{background:#fff;color:#0b0f14}.intel-view{display:none}.intel-view.active{display:block}.ai-layout,.plan-grid,.privacy-grid,.budget-grid,.goal-form{display:grid;gap:12px}.ai-chat{min-height:460px;display:flex;flex-direction:column}.chat-log{display:flex;flex-direction:column;gap:10px;flex:1;max-height:560px;overflow:auto;padding:4px}.msg{max-width:90%;padding:11px 13px;border-radius:14px;line-height:1.45;font-size:.9rem}.msg.bot{align-self:flex-start;background:var(--panel2);border:1px solid var(--border)}.msg.user{align-self:flex-end;background:#f5f7fa;color:#0b0f14}.structured-message{width:min(100%,620px)}.response-head{display:flex;align-items:center;justify-content:space-between;gap:10px}.response-title{font-size:.92rem}.response-mode{font-size:.67rem;padding:4px 7px;border:1px solid var(--border);border-radius:999px;color:var(--muted)}.response-summary{margin-top:8px}.response-metrics{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px;margin-top:10px}.response-metric{background:var(--bg);border-radius:10px;padding:9px}.response-metric span,.response-metric strong{display:block}.response-metric strong{margin-top:3px}.response-list{padding-left:18px;margin:10px 0 0}.clarification{margin-top:10px;color:#fbbf24}.confirmation-box{margin-top:10px;padding:10px;border:1px solid rgba(251,191,36,.35);border-radius:10px;background:rgba(251,191,36,.06)}.status-message{opacity:.75}.chat-compose{display:grid;grid-template-columns:1fr auto;gap:8px;margin-top:12px}.quick-prompts{display:flex;gap:7px;flex-wrap:wrap;margin-top:10px}.quick-prompts button{font-size:.74rem}.chat-tools{display:flex;gap:7px;align-items:center;flex-wrap:wrap;margin-top:10px}.mutation-actions{display:flex;gap:7px;flex-wrap:wrap;margin-top:9px}.insight-list{display:grid;gap:9px}.insight{background:var(--panel2);border-left:3px solid var(--accent);padding:11px;border-radius:10px}.insight.warning{border-left-color:#fbbf24}.insight.danger{border-left-color:var(--expense)}.insight.good{border-left-color:var(--income)}.insight-text,.goal-priority{margin-top:5px}.goal-form{grid-template-columns:1fr}.goal-list,.budget-list{display:grid;gap:10px;margin-top:12px}.goal-card,.budget-card{background:var(--panel2);border:1px solid var(--border);padding:13px;border-radius:14px}.goal-head{display:flex;justify-content:space-between;gap:10px}.progress{height:9px;border-radius:999px;background:#0b0f14;overflow:hidden;margin:10px 0 5px}.progress>span{display:block;height:100%;background:linear-gradient(90deg,var(--accent),var(--income));border-radius:999px}.goal-meta{display:flex;justify-content:space-between;gap:8px;color:var(--muted);font-size:.75rem;flex-wrap:wrap}.scenario-grid{display:grid;gap:10px;margin-top:12px}.scenario-result{font-size:1.35rem;font-weight:800;margin-top:6px}.goal-actions{display:flex;gap:8px;margin-top:10px}.goal-actions button{font-size:.75rem}.ai-badge{display:inline-flex;align-items:center;gap:6px;padding:5px 8px;border:1px solid rgba(63,213,154,.25);background:rgba(63,213,154,.08);color:var(--income);border-radius:999px;font-size:.72rem;margin-top:6px}.budget-status{font-size:.72rem;padding:4px 7px;border-radius:999px}.budget-status.saudavel{color:var(--income);background:rgba(63,213,154,.09)}.budget-status.atencao{color:#fbbf24;background:rgba(251,191,36,.09)}.budget-status.excedido{color:var(--expense);background:rgba(255,112,112,.09)}.privacy-note{background:var(--panel2);padding:12px;border-radius:12px}.privacy-note ul{margin:8px 0 0;padding-left:18px}.hidden{display:none!important}@media(min-width:760px){.intel-shell{padding:30px 22px 60px}.ai-layout{grid-template-columns:minmax(0,1.35fr) minmax(300px,.65fr)}.plan-grid,.privacy-grid,.budget-grid{grid-template-columns:1.1fr .9fr}.goal-form{grid-template-columns:1.3fr .8fr .8fr .8fr}.scenario-grid{grid-template-columns:repeat(3,1fr)}}
-  </style>
+  <link rel="stylesheet" href="css/inteligencia.css" />
   <script type="module" src="js/inteligencia.js"></script>
 </head>
 <body>
@@ -21,11 +20,14 @@
         <h1>Assistente & Planejamento</h1>
         <span id="aiModeBadge" class="ai-badge" aria-live="polite">Análise local</span>
       </div>
-      <a class="back-link" href="index.html">← Voltar ao Dashboard</a>
+      <div class="topbar-actions">
+        <a class="back-link" href="gestao.html">🏦 Contas</a>
+        <a class="back-link" href="index.html">← Dashboard</a>
+      </div>
     </header>
 
     <nav class="tabs" aria-label="Seções do assistente">
-      <button class="tab-btn active" data-tab="ia">🤖 Assistente</button>
+      <button class="tab-btn active" data-tab="ia" aria-current="page">🤖 Assistente</button>
       <button class="tab-btn" data-tab="planejamento">🎯 Longo prazo</button>
       <button class="tab-btn" data-tab="orcamentos">📊 Orçamentos</button>
       <button class="tab-btn" data-tab="privacidade">🔒 Privacidade</button>
@@ -49,13 +51,14 @@
             <button id="stopAiBtn" class="btn btn-danger hidden" type="button">Interromper</button>
           </div>
           <div class="chat-compose">
-            <input id="aiQuestion" class="input" autocomplete="off" maxlength="500" aria-label="Pergunta ao assistente" placeholder="Ex.: Quanto gastei com mercado em agosto?" />
+            <label class="sr-only" for="aiQuestion">Pergunta ao assistente</label>
+            <input id="aiQuestion" class="input" autocomplete="off" maxlength="500" placeholder="Ex.: Quanto gastei com mercado em agosto?" />
             <button id="askAiBtn" class="btn btn-primary" type="button">Enviar</button>
           </div>
         </article>
 
         <article class="card">
-          <div class="card-head"><div><h2>Insights automáticos</h2><p>Sinais locais, explicáveis e sem diagnóstico de fraude.</p></div></div>
+          <div class="card-head"><div><h2>Insights automáticos</h2><p>No máximo três sinais locais e explicáveis.</p></div></div>
           <div id="aiInsights" class="insight-list"></div>
         </article>
       </div>
@@ -66,15 +69,15 @@
         <article class="card">
           <div class="card-head"><div><h2>Metas de longo prazo</h2><p>Defina objetivo, prazo e ritmo de aporte.</p></div></div>
           <div class="goal-form">
-            <input id="goalName" class="input" maxlength="80" placeholder="Nome da meta" />
-            <select id="goalCurrency" class="input"><option value="PYG">PYG</option><option value="BRL">BRL</option></select>
-            <input id="goalTarget" class="input" inputmode="decimal" placeholder="Valor alvo" />
-            <input id="goalDate" class="input" type="date" />
+            <label><span class="sr-only">Nome da meta</span><input id="goalName" class="input" maxlength="80" placeholder="Nome da meta" /></label>
+            <label><span class="sr-only">Moeda da meta</span><select id="goalCurrency" class="input"><option value="PYG">PYG</option><option value="BRL">BRL</option></select></label>
+            <label><span class="sr-only">Valor alvo</span><input id="goalTarget" class="input" inputmode="decimal" placeholder="Valor alvo" /></label>
+            <label><span class="sr-only">Data alvo</span><input id="goalDate" class="input" type="date" /></label>
           </div>
-          <div class="goal-form" style="margin-top:8px">
-            <input id="goalCurrent" class="input" inputmode="decimal" placeholder="Já guardado" />
-            <input id="goalMonthly" class="input" inputmode="decimal" placeholder="Aporte mensal" />
-            <select id="goalPriority" class="input"><option value="alta">Prioridade alta</option><option value="media">Prioridade média</option><option value="baixa">Prioridade baixa</option></select>
+          <div class="goal-form secondary-form-row">
+            <label><span class="sr-only">Valor já guardado</span><input id="goalCurrent" class="input" inputmode="decimal" placeholder="Já guardado" /></label>
+            <label><span class="sr-only">Aporte mensal</span><input id="goalMonthly" class="input" inputmode="decimal" placeholder="Aporte mensal" /></label>
+            <label><span class="sr-only">Prioridade</span><select id="goalPriority" class="input"><option value="alta">Prioridade alta</option><option value="media">Prioridade média</option><option value="baixa">Prioridade baixa</option></select></label>
             <button id="addGoalBtn" class="btn btn-primary" type="button">Adicionar meta</button>
           </div>
           <div id="goalList" class="goal-list"></div>
@@ -83,13 +86,13 @@
         <article class="card">
           <div class="card-head"><div><h2>Simulador de futuro</h2><p>Simulação matemática, sem recomendação de investimento.</p></div></div>
           <div class="scenario-grid">
-            <div class="field"><label>Aporte mensal (BRL)</label><input id="simMonthly" class="input" type="number" value="500" min="0" /></div>
-            <div class="field"><label>Prazo (anos)</label><input id="simYears" class="input" type="number" value="5" min="1" max="50" /></div>
-            <div class="field"><label>Rendimento anual (%)</label><input id="simRate" class="input" type="number" value="8" min="0" max="100" step="0.1" /></div>
+            <div class="field"><label for="simMonthly">Aporte mensal (BRL)</label><input id="simMonthly" class="input" type="number" value="500" min="0" /></div>
+            <div class="field"><label for="simYears">Prazo (anos)</label><input id="simYears" class="input" type="number" value="5" min="1" max="50" /></div>
+            <div class="field"><label for="simRate">Rendimento anual (%)</label><input id="simRate" class="input" type="number" value="8" min="0" max="100" step="0.1" /></div>
           </div>
-          <button id="simulateBtn" class="btn btn-primary" type="button" style="margin-top:8px">Calcular projeção</button>
-          <div style="margin-top:16px"><span class="muted">Patrimônio projetado</span><div id="simulationResult" class="scenario-result">R$ 0,00</div><p id="simulationDetail" class="muted" style="margin-top:5px"></p></div>
-          <div class="insight" style="margin-top:16px"><strong>Importante</strong><p class="muted insight-text">Rentabilidade real pode variar e sofrer efeitos de inflação, impostos, custos e perdas.</p></div>
+          <button id="simulateBtn" class="btn btn-primary secondary-form-row" type="button">Calcular projeção</button>
+          <div class="result-block"><span class="muted">Patrimônio projetado</span><div id="simulationResult" class="scenario-result">R$ 0,00</div><p id="simulationDetail" class="muted insight-text"></p></div>
+          <div class="insight result-block"><strong>Importante</strong><p class="muted insight-text">Rentabilidade real pode variar e sofrer efeitos de inflação, impostos, custos e perdas.</p></div>
         </article>
       </div>
     </section>
@@ -97,19 +100,19 @@
     <section id="tab-orcamentos" class="intel-view">
       <div class="budget-grid">
         <article class="card">
-          <div class="card-head"><div><h2>Orçamento por categoria</h2><p>Limites mensais com acompanhamento e projeção.</p></div></div>
+          <div class="card-head"><div><h2>Orçamento por categoria</h2><p>Limites mensais com acompanhamento e conversão explícita entre moedas.</p></div></div>
           <div class="goal-form">
-            <select id="budgetCategory" class="input"></select>
-            <select id="budgetCurrency" class="input"><option value="PYG">PYG</option><option value="BRL">BRL</option></select>
-            <input id="budgetLimit" class="input" inputmode="decimal" placeholder="Limite mensal" />
+            <label><span class="sr-only">Categoria do orçamento</span><select id="budgetCategory" class="input"></select></label>
+            <label><span class="sr-only">Moeda do orçamento</span><select id="budgetCurrency" class="input"><option value="PYG">PYG</option><option value="BRL">BRL</option></select></label>
+            <label><span class="sr-only">Limite mensal</span><input id="budgetLimit" class="input" inputmode="decimal" placeholder="Limite mensal" /></label>
             <button id="addBudgetBtn" class="btn btn-primary" type="button">Salvar orçamento</button>
           </div>
           <div id="budgetList" class="budget-list"></div>
         </article>
         <article class="card">
           <h2>Como os alertas funcionam</h2>
-          <div class="privacy-note" style="margin-top:12px">
-            <p class="muted">O status é calculado localmente: saudável abaixo de 80%, atenção entre 80% e 99%, e excedido a partir de 100%. A projeção usa o ritmo médio do mês e é marcada como estimativa.</p>
+          <div class="privacy-note result-block">
+            <p class="muted">Saudável abaixo de 80%, atenção entre 80% e 99%, e excedido a partir de 100%. Despesas da mesma categoria em outra moeda são convertidas explicitamente e marcadas como aproximadas quando necessário.</p>
           </div>
         </article>
       </div>
@@ -120,40 +123,35 @@
         <article class="card">
           <div class="card-head"><div><h2>Privacidade da IA</h2><p>O padrão é somente análise local.</p></div></div>
           <div class="field">
-            <label>Nível de compartilhamento</label>
+            <label for="privacyLevel">Nível de compartilhamento</label>
             <select id="privacyLevel" class="input">
               <option value="local">1. Somente análise local</option>
               <option value="aggregated">2. IA online com dados agregados</option>
               <option value="selected_details">3. IA online com detalhes selecionados</option>
             </select>
           </div>
-          <div class="field">
-            <label><input id="onlineAiToggle" type="checkbox" /> Habilitar IA online opcional</label>
-          </div>
-          <div class="field">
-            <label>Endpoint seguro do seu backend</label>
-            <input id="onlineEndpoint" class="input" value="/api/financial-assistant" maxlength="200" />
-          </div>
+          <div class="field"><label><input id="onlineAiToggle" type="checkbox" /> Habilitar IA online opcional</label></div>
+          <div class="field"><label for="onlineEndpoint">Endpoint seguro do seu backend</label><input id="onlineEndpoint" class="input" value="/api/financial-assistant" maxlength="200" /></div>
           <button id="savePrivacyBtn" class="btn btn-primary" type="button">Salvar preferências</button>
-          <p id="privacySummary" class="muted" style="margin-top:12px"></p>
+          <p id="privacySummary" class="muted result-block"></p>
         </article>
 
         <article class="card">
           <h2>O que fica no dispositivo</h2>
-          <div class="privacy-note" style="margin-top:12px">
+          <div class="privacy-note result-block">
             <ul class="muted">
-              <li>Transações, categorias, metas, orçamentos e cotações ficam no IndexedDB.</li>
+              <li>Transações, contas, categorias, metas, orçamentos, compromissos, regras e cotações ficam no IndexedDB.</li>
               <li>A memória da conversa fica apenas na sessão e tem limite de mensagens.</li>
               <li>A memória do chat não entra no backup financeiro.</li>
               <li>Nenhuma chave de API é armazenada no HTML, JavaScript, IndexedDB, LocalStorage ou Service Worker.</li>
               <li>Ao usar IA online, o aplicativo envia somente o contexto permitido por você e apenas durante a pergunta.</li>
             </ul>
           </div>
-          <div class="privacy-note" style="margin-top:10px"><strong>GitHub Pages</strong><p class="muted insight-text">GitHub Pages é hospedagem estática. Para usar IA generativa com segurança, o endpoint precisa estar em um backend ou função serverless separado com a chave em variável de ambiente.</p></div>
+          <div class="privacy-note secondary-form-row"><strong>GitHub Pages</strong><p class="muted insight-text">GitHub Pages é hospedagem estática. IA generativa exige backend ou função serverless separado, com segredo em variável de ambiente.</p></div>
         </article>
       </div>
     </section>
   </main>
-  <div class="toast" id="toast" aria-live="polite"></div>
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
 </body>
 </html>
