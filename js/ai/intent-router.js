@@ -1,4 +1,4 @@
-import { extractPeriodFromText } from "../finance/period-utils.js";
+import { extractPeriodFromText, resolvePeriod } from "../finance/period-utils.js";
 import { normalizeText } from "./validators.js";
 import { parseLooseNumber } from "../utils.js";
 
@@ -9,8 +9,8 @@ const INTENTS = [
 ];
 
 function detectCurrency(q) {
-  if (/\b(brl|reais?|r\$)\b/.test(q)) return "BRL";
-  if (/\b(pyg|guaranis?|gs\.?)\b/.test(q)) return "PYG";
+  if (/(?:\bbrl\b|\breais?\b|r\$)/.test(q)) return "BRL";
+  if (/(?:\bpyg\b|\bguaranis?\b|gs\.?|₲)/.test(q)) return "PYG";
   return null;
 }
 
@@ -33,16 +33,17 @@ function extractAmountAndCurrency(original, normalized) {
   return { amount: Math.abs(parseLooseNumber(money)), currency: detectCurrency(normalized) };
 }
 
-function relativeDate(q, now = new Date()) {
+function explicitRelativeDate(q, now = new Date()) {
   const date = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-  if (/ontem/.test(q)) date.setDate(date.getDate() - 1);
+  if (/\bontem\b/.test(q)) date.setDate(date.getDate() - 1);
+  else if (!/\bhoje\b/.test(q)) return null;
   return date.toISOString().slice(0, 10);
 }
 
 export function routeIntent(question, { categories = [], memory = null, now = new Date() } = {}) {
   const original = String(question || "").trim();
   const q = normalizeText(original).toLowerCase();
-  const period = extractPeriodFromText(q, now);
+  let period = extractPeriodFromText(q, now);
   let currency = detectCurrency(q);
   let category = detectCategory(q, categories);
   const type = /receita|entrada|recebi|salario/.test(q) ? "income" : /gasto|despesa|saida|paguei|compra/.test(q) ? "expense" : null;
@@ -68,6 +69,8 @@ export function routeIntent(question, { categories = [], memory = null, now = ne
   else if (category && /gastei|gasto|despesa|quanto/.test(q)) { intent = "category_spending"; confidence = 0.9; }
   else if (/gastei|gastos|despesa|onde estou gastando|onde gasto/.test(q)) { intent = "spending_summary"; confidence = 0.82; }
 
+  if (intent === "compare_periods" && /este mes|este mês|mes atual|mês atual/.test(q)) period = resolvePeriod("this_month", now);
+
   const money = extractAmountAndCurrency(original, q);
   if (!currency) currency = money.currency;
   const filters = { period, currency, category, type, tags };
@@ -79,14 +82,14 @@ export function routeIntent(question, { categories = [], memory = null, now = ne
       currency: currency || null,
       type: /recebi|entrada|receita/.test(q) ? "income" : "expense",
       category,
-      date: relativeDate(q, now),
+      date: explicitRelativeDate(q, now) || now.toISOString().slice(0, 10),
       description: category || (type === "income" ? "Receita" : "Despesa")
     };
-    if (!money.amount || !result.entities.currency) confidence -= 0.28;
+    if (!money.amount || !result.entities.currency) result.confidence -= 0.28;
   }
 
   if (intent === "update_transaction" || intent === "delete_transaction") {
-    result.entities = { amount: money.amount, currency, category, date: relativeDate(q, now), last: /ultima|última/.test(q) };
+    result.entities = { amount: money.amount, currency, category, date: explicitRelativeDate(q, now), last: /ultima|última/.test(q) };
   }
 
   if (!INTENTS.includes(result.intent)) result.intent = "unknown";
