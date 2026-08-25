@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Testes | Projeto Finanças</title><style>body{font-family:system-ui;background:#0b0f14;color:#fff;padding:24px}li{margin:8px 0}.ok{color:#3fd59a}.fail{color:#ff7070}code{color:#fbbf24}</style></head>
+<body>
+<h1>Testes do Projeto Finanças</h1>
+<p>Dados exclusivamente fictícios.</p>
+<ul id="results"></ul>
+<script type="module">
+  import { results } from "./finance.test.js";
+  const list = document.querySelector("#results");
+  results.forEach((r) => {
+    const li = document.createElement("li");
+    li.className = r.ok ? "ok" : "fail";
+    li.textContent = `${r.ok ? "✓" : "✗"} ${r.name}${r.error ? ` — ${r.error}` : ""}`;
+    list.appendChild(li);
+  });
+  const summary = document.createElement("p");
+  const passed = results.filter((r) => r.ok).length;
+  summary.innerHTML = `<strong>${passed}/${results.length}</strong> testes aprovados.`;
+  document.body.appendChild(summary);
+</script>
+</body>
+</html>
