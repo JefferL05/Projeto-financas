@@ -1,4 +1,4 @@
-const CACHE_NAME = "projeto-financas-v6";
+const CACHE_NAME = "projeto-financas-v6.1";
 
 const APP_SHELL = [
   "./",
@@ -9,6 +9,7 @@ const APP_SHELL = [
   "./manifest.json",
   "./css/styles.css",
   "./css/gestao.css",
+  "./css/inteligencia.css",
   "./css/v2.css",
   "./js/app.js",
   "./js/gestao.js",
@@ -18,6 +19,7 @@ const APP_SHELL = [
   "./js/charts.js",
   "./js/inteligencia.js",
   "./js/ai/assistant.js",
+  "./js/ai/account-context.js",
   "./js/ai/intent-router.js",
   "./js/ai/local-engine.js",
   "./js/ai/context-builder.js",
@@ -51,7 +53,7 @@ self.addEventListener("install", (event) => {
         try {
           await cache.add(url);
         } catch {
-          // Um recurso opcional não deve impedir a instalação da PWA inteira.
+          // Um recurso opcional não deve impedir a instalação inteira.
         }
       }
     })
@@ -90,10 +92,7 @@ self.addEventListener("fetch", (event) => {
           }
           return response;
         })
-        .catch(async () => {
-          return (await caches.match(request))
-            || (await caches.match("./offline.html"));
-        })
+        .catch(async () => (await caches.match(request)) || (await caches.match("./offline.html")))
     );
     return;
   }
