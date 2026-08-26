@@ -143,3 +143,40 @@ test("E2E 7 — assistente local responde sem IA externa", async ({ page }) => {
   await expect.poll(async () => page.locator("#chatLog > *").count()).toBeGreaterThan(before);
   await expect(page.locator("#onlineAiToggle")).not.toBeChecked();
 });
+
+test("E2E 8 — assistente entende como zerar uma conta PYG negativa", async ({ page }) => {
+  await page.goto("/gestao.html");
+  await expect(page.locator("#accountsList")).toContainText("Carteira PYG");
+
+  await page.evaluate(async () => {
+    const db = await new Promise((resolve, reject) => {
+      const request = indexedDB.open("ProjetoFinancasDB");
+      request.onsuccess = () => resolve(request.result);
+      request.onerror = () => reject(request.error);
+    });
+
+    await new Promise((resolve, reject) => {
+      const tx = db.transaction("accounts", "readwrite");
+      const store = tx.objectStore("accounts");
+      const request = store.get("account-wallet-pyg");
+      request.onsuccess = () => {
+        store.put({
+          ...request.result,
+          openingBalance: -99,
+          updatedAt: new Date().toISOString()
+        });
+      };
+      tx.oncomplete = () => resolve();
+      tx.onerror = () => reject(tx.error);
+      tx.onabort = () => reject(tx.error);
+    });
+    db.close();
+  });
+
+  await page.goto("/inteligencia.html#ia");
+  await page.locator("#aiQuestion").fill("Como faço pra deixar zero minha conta Guarani : Esta -99");
+  await page.locator("#askAiBtn").click();
+  await expect(page.locator("#chatLog")).toContainText("zerar");
+  await expect(page.locator("#chatLog")).toContainText("99");
+  await expect(page.locator("#chatLog")).not.toContainText("Não entendi com segurança");
+});
