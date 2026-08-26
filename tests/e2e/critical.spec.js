@@ -1,7 +1,37 @@
 import { test, expect } from "@playwright/test";
 
+const E2E_USER = "Teste E2E";
+const E2E_PASSWORD = "SenhaE2E123!";
+
+async function unlockIfNeeded(page) {
+  const setup = page.locator("#authSetupUser");
+  const login = page.locator("#authLoginUser");
+
+  if (await setup.isVisible().catch(() => false)) {
+    await setup.fill(E2E_USER);
+    await page.locator("#authSetupMethod").selectOption("password");
+    await page.locator("#authSetupSecret").fill(E2E_PASSWORD);
+    await page.locator("#authSetupConfirm").fill(E2E_PASSWORD);
+    await page.getByRole("button", { name: "Criar acesso" }).click();
+    await expect(page.locator(".auth-overlay")).toHaveCount(0);
+    return;
+  }
+
+  if (await login.isVisible().catch(() => false)) {
+    await login.fill(E2E_USER);
+    await page.locator("#authLoginSecret").fill(E2E_PASSWORD);
+    await page.getByRole("button", { name: "Entrar" }).click();
+    await expect(page.locator(".auth-overlay")).toHaveCount(0);
+  }
+}
+
+async function openProtected(page, path) {
+  await page.goto(path);
+  await unlockIfNeeded(page);
+}
+
 async function waitForApp(page) {
-  await page.goto("/index.html");
+  await openProtected(page, "/index.html");
   await expect(page.locator("#pageTitle")).toHaveText("Dashboard");
   await page.waitForFunction(() => indexedDB.databases ? indexedDB.databases().then((dbs) => dbs.some((db) => db.name === "ProjetoFinancasDB")) : true);
 }
@@ -36,7 +66,7 @@ test("E2E 2 — importação rápida grava sugestões", async ({ page }) => {
 });
 
 test("E2E 3 — cria conta e transfere entre contas BRL", async ({ page }) => {
-  await page.goto("/gestao.html");
+  await openProtected(page, "/gestao.html");
   await page.locator("#accountName").fill("Poupança E2E");
   await page.locator("#accountType").selectOption("savings");
   await page.locator("#accountCurrency").selectOption("BRL");
@@ -59,7 +89,7 @@ test("E2E 3 — cria conta e transfere entre contas BRL", async ({ page }) => {
 });
 
 test("E2E 4 — cartão aumenta dívida e pagamento por transferência reduz", async ({ page }) => {
-  await page.goto("/gestao.html");
+  await openProtected(page, "/gestao.html");
   await page.locator("#accountName").fill("Cartão E2E");
   await page.locator("#accountType").selectOption("credit_card");
   await page.locator("#accountCurrency").selectOption("BRL");
@@ -69,7 +99,7 @@ test("E2E 4 — cartão aumenta dívida e pagamento por transferência reduz", a
   const cardId = await cardOption.getAttribute("value");
   expect(cardId).toBeTruthy();
 
-  await page.goto("/index.html");
+  await openProtected(page, "/index.html");
   await page.locator("#newTransactionBtn").click();
   await page.locator("#txCurrency").selectOption("BRL");
   await page.locator("#txAccount").selectOption(cardId);
@@ -81,7 +111,7 @@ test("E2E 4 — cartão aumenta dívida e pagamento por transferência reduz", a
   await expect(page.locator("#transactionDialog")).not.toBeVisible();
   await expect(page.locator("#recentTransactions")).toContainText("Compra no cartão E2E");
 
-  await page.goto("/gestao.html");
+  await openProtected(page, "/gestao.html");
   await expect(page.locator("#accountsList")).toContainText("1.200,00");
   await page.locator('[data-tab="transfer"]').click();
   await page.locator("#transferSource").selectOption("account-wallet-brl");
@@ -110,9 +140,7 @@ test("E2E 5 — exporta, limpa e restaura backup", async ({ page }) => {
   await page.locator("#clearDatabaseBtn").click();
   await expect(page.locator("#dbTransactions")).toHaveText("0");
 
-  page.on("dialog", async (dialog) => {
-    await dialog.accept();
-  });
+  page.on("dialog", async (dialog) => dialog.accept());
   await page.locator("#importJsonInput").setInputFiles(backupPath);
   await expect(page.locator("#toast")).toContainText("Backup restaurado");
   await page.locator('[data-view="transactions"]').click();
@@ -135,7 +163,7 @@ test("E2E 6 — app shell continua navegável offline", async ({ page, context }
 });
 
 test("E2E 7 — assistente local responde sem IA externa", async ({ page }) => {
-  await page.goto("/inteligencia.html#ia");
+  await openProtected(page, "/inteligencia.html#ia");
   await expect(page.locator("#aiModeBadge")).toContainText(/Análise local|Modo offline/);
   const before = await page.locator("#chatLog > *").count();
   await page.locator("#aiQuestion").fill("Quanto gastei hoje?");
@@ -145,7 +173,7 @@ test("E2E 7 — assistente local responde sem IA externa", async ({ page }) => {
 });
 
 test("E2E 8 — assistente entende como zerar uma conta PYG negativa", async ({ page }) => {
-  await page.goto("/gestao.html");
+  await openProtected(page, "/gestao.html");
   await expect(page.locator("#accountsList")).toContainText("Carteira PYG");
 
   await page.evaluate(async () => {
@@ -154,18 +182,11 @@ test("E2E 8 — assistente entende como zerar uma conta PYG negativa", async ({ 
       request.onsuccess = () => resolve(request.result);
       request.onerror = () => reject(request.error);
     });
-
     await new Promise((resolve, reject) => {
       const tx = db.transaction("accounts", "readwrite");
       const store = tx.objectStore("accounts");
       const request = store.get("account-wallet-pyg");
-      request.onsuccess = () => {
-        store.put({
-          ...request.result,
-          openingBalance: -99,
-          updatedAt: new Date().toISOString()
-        });
-      };
+      request.onsuccess = () => store.put({ ...request.result, openingBalance: -99, updatedAt: new Date().toISOString() });
       tx.oncomplete = () => resolve();
       tx.onerror = () => reject(tx.error);
       tx.onabort = () => reject(tx.error);
@@ -173,7 +194,7 @@ test("E2E 8 — assistente entende como zerar uma conta PYG negativa", async ({ 
     db.close();
   });
 
-  await page.goto("/inteligencia.html#ia");
+  await openProtected(page, "/inteligencia.html#ia");
   await page.locator("#aiQuestion").fill("Como faço pra deixar zero minha conta Guarani : Esta -99");
   await page.locator("#askAiBtn").click();
   await expect(page.locator("#chatLog")).toContainText("zerar");
