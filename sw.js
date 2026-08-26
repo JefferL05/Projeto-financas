@@ -1,4 +1,4 @@
-const CACHE_NAME = "projeto-financas-v9";
+const CACHE_NAME = "projeto-financas-v10";
 
 const APP_SHELL = [
   "./",
@@ -7,6 +7,8 @@ const APP_SHELL = [
   "./gestao.html",
   "./offline.html",
   "./manifest.json",
+  "./assets/icons/icon-192.svg",
+  "./assets/icons/icon-512.svg",
   "./css/styles.css",
   "./css/gestao.css",
   "./css/v2.css",
