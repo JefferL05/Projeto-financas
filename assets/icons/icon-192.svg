@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="192" height="192" viewBox="0 0 192 192" role="img" aria-label="Projeto Finanças">
+  <rect width="192" height="192" rx="42" fill="#0b0f14"/>
+  <rect x="22" y="22" width="148" height="148" rx="32" fill="#11171e" stroke="#26303b" stroke-width="4"/>
+  <path d="M54 103h28v35H54zm38-30h28v65H92zm38 17h28v48h-28z" fill="#3fd59a"/>
+  <circle cx="68" cy="62" r="18" fill="#7dd3fc"/>
+  <text x="96" y="169" text-anchor="middle" font-family="system-ui,sans-serif" font-size="18" font-weight="700" fill="#f5f7fa">PYG • BRL</text>
+</svg>
