@@ -10,9 +10,13 @@ const COLLOQUIAL_REPLACEMENTS = [
   [/\bpra\b/g, "para"],
   [/\bpro\b/g, "para o"],
   [/\bta\b/g, "esta"],
+  [/\btá\b/g, "esta"],
   [/\bto\b/g, "estou"],
+  [/\btô\b/g, "estou"],
   [/\bqto\b/g, "quanto"],
-  [/\bgrana\b/g, "dinheiro"]
+  [/\bgrana\b/g, "dinheiro"],
+  [/\bguarani\b/g, "guarani"],
+  [/\breais\b/g, "real"]
 ];
 
 export function normalizeFinancialQuestion(value) {
@@ -31,10 +35,18 @@ export function detectCurrencyEntity(text) {
 }
 
 export function extractSignedAmount(text) {
-  const match = String(text ?? "").match(/(?:r\$|gs\.?|₲)?\s*-?\s*\d[\d.,]*/i)?.[0];
+  const source = String(text ?? "");
+  const match = source.match(/(?:r\$|gs\.?|₲)?\s*-?\s*\d[\d.,]*/i)?.[0];
   if (!match) return null;
-  const amount = parseSignedAmount(match);
-  return Number.isFinite(amount) ? amount : null;
+
+  let amount = parseSignedAmount(match);
+  if (!Number.isFinite(amount)) return null;
+
+  const afterMatch = source.slice((source.indexOf(match) + match.length)).trim().toLowerCase();
+  if (/^(?:milhao|milhão|milhoes|milhões)\b/.test(afterMatch)) amount *= 1_000_000;
+  else if (/^mil\b/.test(afterMatch)) amount *= 1_000;
+
+  return amount;
 }
 
 function normalizedAccountName(account) {
@@ -78,7 +90,7 @@ export function extractFinancialEntities(question, { accounts = [] } = {}) {
   const amount = extractSignedAmount(original);
   const accountResolution = resolveAccountEntity(original, accounts, currency);
 
-  const action = /(?:zerar|zero|sair do negativo|sair do vermelho|cobrir saldo|deixar.+zero|quanto preciso (?:colocar|depositar)|quanto falta.+zerar)/.test(normalized)
+  const action = /(?:zerar|zero|sair do negativo|sair do vermelho|cobrir saldo|deixar.+zero|quanto preciso (?:colocar|depositar)|quanto falta.+zerar|como arrumo.+negativ)/.test(normalized)
     ? "zero_balance"
     : /(?:depositar|colocar|adicionar)/.test(normalized)
       ? "deposit"
