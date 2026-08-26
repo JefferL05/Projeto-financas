@@ -5,6 +5,18 @@ import { isSessionUnlocked, lockSession, startAutoLock } from "./session.js";
 let released = false;
 let authenticating = false;
 
+function financialShells() {
+  return [...document.querySelectorAll(".app-shell, .standalone-main, .intel-shell")];
+}
+
+function hideFinancialShells() {
+  financialShells().forEach((element) => { element.hidden = true; });
+}
+
+function showFinancialShells() {
+  financialShells().forEach((element) => { element.hidden = false; });
+}
+
 function ensureStylesheet() {
   if (document.querySelector('link[data-auth-style="true"]')) return;
   const link = document.createElement("link");
@@ -18,6 +30,7 @@ async function authenticateAndRelease() {
   if (authenticating) return;
   authenticating = true;
   try {
+    hideFinancialShells();
     let profile = await getAuthProfile();
     if (!profile || !isSessionUnlocked(profile)) {
       lockSession();
@@ -26,6 +39,7 @@ async function authenticateAndRelease() {
 
     startAutoLock(profile, () => location.reload());
     released = true;
+    showFinancialShells();
     document.documentElement.classList.remove("auth-pending");
     document.removeEventListener("DOMContentLoaded", interceptReady, true);
     document.dispatchEvent(new Event("DOMContentLoaded"));
@@ -45,6 +59,7 @@ function interceptReady(event) {
   if (released) return;
   event.stopImmediatePropagation();
   ensureStylesheet();
+  hideFinancialShells();
   void authenticateAndRelease();
 }
 
