@@ -11,6 +11,7 @@ Aplicação web de gestão financeira pessoal multi-moeda, local-first, constru�
 - Chart.js com fallback Canvas local
 - Service Worker + Web App Manifest
 - Vitest + fake-indexeddb para testes unitários
+- Playwright para fluxos E2E críticos
 - GitHub Actions para CI
 
 ## Funcionalidades atuais
@@ -85,18 +86,7 @@ Stores:
 
 ### Índices relevantes
 
-Transações possuem índices por:
-
-- data
-- moeda
-- tipo
-- categoria
-- conta
-- status
-- transferência
-- agendamento
-
-Contas, agendamentos, regras e conciliações também possuem índices específicos usados pelos serviços de domínio.
+Transações possuem índices por data, moeda, tipo, categoria, conta, status, transferência e agendamento. Contas, agendamentos, regras e conciliações também possuem índices específicos usados pelos serviços de domínio.
 
 ## Reset seguro
 
@@ -146,8 +136,6 @@ Transferências usam duas movimentações ligadas por `transferId` e são gravad
 
 Schema atual: **6**
 
-Formato principal:
-
 ```json
 {
   "schemaVersion": 6,
@@ -160,7 +148,7 @@ Formato principal:
 
 O backup inclui todas as stores conhecidas. Backups legados sem contas são migrados antes da restauração e as transações são vinculadas a carteiras padrão compatíveis com a moeda.
 
-Settings importados são validados por allowlist. Atualmente os settings persistidos no IndexedDB são:
+Settings importados são validados por allowlist:
 
 - `baseCurrency`: `BRL` ou `PYG`;
 - `brlToPyg`: número finito e positivo dentro do intervalo aceito.
@@ -190,8 +178,6 @@ GitHub Pages não executa esse backend.
 
 Padrão: **Somente análise local**.
 
-Níveis do assistente:
-
 1. Somente análise local.
 2. IA online com dados agregados.
 3. IA online com detalhes selecionados.
@@ -200,21 +186,13 @@ A memória de conversa usa `sessionStorage` e não entra no backup financeiro.
 
 ## PWA / offline
 
-O Service Worker usa cache versionado e mantém o app shell local.
+O Service Worker usa cache versionado e mantém o app shell local. Não são armazenados em cache `/api/*`, respostas da IA online ou recursos externos privados.
 
-Não são armazenados em cache:
+Chart.js é carregado por CDN quando disponível, mas `js/charts.js` possui fallback Canvas local para os gráficos essenciais. A vendorização de Chart.js permanece uma melhoria futura.
 
-- `/api/*`
-- respostas da IA online
-- recursos externos privados
-
-Chart.js é carregado por CDN quando disponível, mas `js/charts.js` possui fallback Canvas para os gráficos essenciais. A vendorização do Chart.js ainda é uma melhoria futura.
-
-O manifest já possui `start_url`, `scope`, `display`, tema e atalhos. Ícones PWA próprios 192x192/512x512 ainda estão pendentes.
+O manifest possui `start_url`, `scope`, modo standalone, tema, atalhos e ícones próprios 192x192/512x512. Os ícones atuais são SVG e ficam no app shell offline.
 
 ## Segurança
-
-Principais proteções:
 
 - validação de stores/IDs/moedas/tipos/status/datas/valores;
 - settings por allowlist;
@@ -229,41 +207,26 @@ Principais proteções:
 
 ## Testes
 
-Instale dependências de desenvolvimento:
-
 ```bash
 npm install
-```
-
-Execute:
-
-```bash
 npm test
-```
-
-Cobertura:
-
-```bash
 npm run test:coverage
+npm run test:e2e
 ```
 
-A suíte utiliza somente dados fictícios e cobre, entre outros:
+A suíte unitária utiliza somente dados fictícios e cobre cálculos financeiros, BRL/PYG, comparação de períodos, contas/passivos, parser/importação rápida, recorrências/anomalias, metas/orçamentos, reset, settings, valores negativos, backup, XSS/prompt injection e CSV Formula Injection.
 
-- cálculos financeiros;
-- BRL/PYG;
-- comparação de períodos;
-- contas/passivos;
-- parser/importação rápida;
-- recorrências e anomalias;
-- metas/orçamentos;
-- reset do banco;
-- settings;
-- valores negativos;
-- backup;
-- XSS/prompt injection;
-- CSV Formula Injection.
+A suíte Playwright cobre sete fluxos críticos:
 
-O CI está em `.github/workflows/tests.yml`.
+1. criar transação e atualizar dashboard;
+2. importação rápida;
+3. criar conta e transferir entre contas;
+4. compra e pagamento parcial de cartão;
+5. exportar, limpar e restaurar backup;
+6. navegação local offline;
+7. assistente financeiro local sem IA externa.
+
+O CI está em `.github/workflows/tests.yml` e executa Vitest, cobertura e Playwright.
 
 ## Executar localmente
 
@@ -271,15 +234,9 @@ O CI está em `.github/workflows/tests.yml`.
 python -m http.server 8080
 ```
 
-Abra:
-
-```text
-http://localhost:8080
-```
+Abra `http://localhost:8080`.
 
 ## GitHub Pages
-
-O front-end é estático e compatível com GitHub Pages.
 
 Produção atual:
 
@@ -292,8 +249,8 @@ https://jefferl05.github.io/Projeto-financas/
 - `js/app.js`, `js/gestao.js` e `js/inteligencia.js` ainda devem ser divididos gradualmente em módulos menores;
 - algumas telas ainda usam `getAll()` e podem evoluir para consultas indexadas/paginadas;
 - Chart.js ainda não está vendorizado localmente;
-- faltam ícones PWA finais;
-- faltam testes E2E completos com Playwright;
+- a cobertura unitária dos controladores/UI ainda é baixa, compensada parcialmente pelos E2E;
+- faltam fixtures automatizadas completas de migração v3/v4/v5 → v6;
 - IA generativa exige backend separado e continua opcional;
 - não existe integração bancária/Open Finance real.
 
