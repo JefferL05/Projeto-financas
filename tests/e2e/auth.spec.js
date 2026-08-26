@@ -11,6 +11,8 @@ async function createAccess(page, path = "/index.html") {
   await page.locator("#authSetupSecret").fill(PASSWORD);
   await page.locator("#authSetupConfirm").fill(PASSWORD);
   await page.getByRole("button", { name: "Criar acesso" }).click();
+  await expect(page.locator("#authRecoveryCode")).toBeVisible();
+  await page.getByRole("button", { name: "Já guardei, continuar" }).click();
   await expect(page.locator(".auth-overlay")).toHaveCount(0);
 }
 
@@ -81,4 +83,34 @@ test("AUTH E2E 6 — login local funciona offline após app shell instalado", as
   await page.getByRole("button", { name: "Entrar" }).click();
   await expect(page.locator("#pageTitle")).toHaveText("Dashboard");
   await context.setOffline(false);
+});
+
+test("AUTH E2E 7 — código de recuperação redefine a senha e invalida o código antigo", async ({ page }) => {
+  await page.goto("/index.html");
+  await page.locator("#authSetupUser").fill(USER);
+  await page.locator("#authSetupSecret").fill(PASSWORD);
+  await page.locator("#authSetupConfirm").fill(PASSWORD);
+  await page.getByRole("button", { name: "Criar acesso" }).click();
+  const oldRecoveryCode = (await page.locator("#authRecoveryCode").textContent())?.trim();
+  expect(oldRecoveryCode).toMatch(/^PF-/);
+  await page.getByRole("button", { name: "Já guardei, continuar" }).click();
+
+  await forceLock(page);
+  await page.reload();
+  await page.getByRole("button", { name: "Esqueci minha senha" }).click();
+  await page.locator("#authRecoveryInput").fill(oldRecoveryCode);
+  await page.locator("#authRecoverySecret").fill("SenhaNovaE2E456!");
+  await page.locator("#authRecoveryConfirm").fill("SenhaNovaE2E456!");
+  await page.getByRole("button", { name: "Redefinir acesso" }).click();
+  await expect(page.locator("#authRecoveryCode")).toBeVisible();
+  const newRecoveryCode = (await page.locator("#authRecoveryCode").textContent())?.trim();
+  expect(newRecoveryCode).not.toBe(oldRecoveryCode);
+  await page.getByRole("button", { name: "Já guardei, continuar" }).click();
+  await expect(page.locator("#pageTitle")).toHaveText("Dashboard");
+
+  await forceLock(page);
+  await page.reload();
+  await page.locator("#authLoginSecret").fill("SenhaNovaE2E456!");
+  await page.getByRole("button", { name: "Entrar" }).click();
+  await expect(page.locator("#pageTitle")).toHaveText("Dashboard");
 });
