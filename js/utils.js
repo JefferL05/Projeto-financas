@@ -1,3 +1,4 @@
+import "./auth/entry.js";
 import { monthKey, todayLocalISO } from "./finance/date-utils.js";
 
 export const DEFAULT_CATEGORIES = [
