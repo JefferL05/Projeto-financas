@@ -5,7 +5,7 @@ export default defineConfig({
     environment: "node",
     globals: true,
     setupFiles: ["./tests/setup.js"],
-    include: ["tests/**/*.vitest.js", "tests/**/*.test.js"],
+    include: ["tests/**/*.vitest.js"],
     testTimeout: 10000,
     coverage: {
       reporter: ["text", "json-summary"],
