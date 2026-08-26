@@ -1,4 +1,9 @@
-import { createCredentialVerifier, verifyCredential } from "./crypto-service.js";
+import {
+  createCredentialVerifier,
+  generateRecoveryCode,
+  normalizeRecoveryCode,
+  verifyCredential
+} from "./crypto-service.js";
 
 const AUTH_DB_NAME = "ProjetoFinancasAuthDB";
 const AUTH_DB_VERSION = 1;
@@ -57,6 +62,28 @@ async function writeProfile(profile) {
   return profile;
 }
 
+async function buildRecoveryVerifier(recoveryCode) {
+  const normalized = normalizeRecoveryCode(recoveryCode);
+  const record = await createCredentialVerifier(normalized);
+  return {
+    recoveryAlgorithm: record.algorithm,
+    recoveryIterations: record.iterations,
+    recoverySalt: record.salt,
+    recoveryVerifier: record.verifier,
+    recoveryCreatedAt: new Date().toISOString()
+  };
+}
+
+function recoveryRecord(profile) {
+  if (!profile?.recoverySalt || !profile?.recoveryVerifier || !Number.isInteger(profile?.recoveryIterations)) return null;
+  return {
+    salt: profile.recoverySalt,
+    verifier: profile.recoveryVerifier,
+    iterations: profile.recoveryIterations,
+    algorithm: profile.recoveryAlgorithm
+  };
+}
+
 export async function getAuthProfile() {
   const db = await openAuthDB();
   const tx = db.transaction(AUTH_STORE, "readonly");
@@ -66,21 +93,30 @@ export async function getAuthProfile() {
   return profile;
 }
 
-export async function createProtection({ username, secret, method = "password" }) {
+export async function createProtectionWithRecovery({ username, secret, method = "password" }) {
   if (await getAuthProfile()) throw new Error("A proteção de acesso já está configurada.");
   const safeUsername = normalizeUsername(username);
   const safeSecret = validateSecret(secret, method);
   const verifier = await createCredentialVerifier(safeSecret);
-  return writeProfile({
-    version: 1,
+  const recoveryCode = generateRecoveryCode();
+  const recovery = await buildRecoveryVerifier(recoveryCode);
+  const profile = await writeProfile({
+    version: 2,
     username: safeUsername,
     method,
     ...verifier,
+    ...recovery,
     autoLockMinutes: 5,
     hideSensitiveNotificationsWhenLocked: true,
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString()
   });
+  return { profile, recoveryCode };
+}
+
+export async function createProtection(options) {
+  const { profile } = await createProtectionWithRecovery(options);
+  return profile;
 }
 
 export async function verifyAccess({ username, secret }) {
@@ -89,6 +125,47 @@ export async function verifyAccess({ username, secret }) {
   if (String(username ?? "").trim() !== profile.username) return { ok: false, reason: "invalid-credentials" };
   const ok = await verifyCredential(String(secret ?? ""), profile);
   return { ok, reason: ok ? null : "invalid-credentials", profile };
+}
+
+export async function verifyRecoveryCode({ username, recoveryCode }) {
+  const profile = await getAuthProfile();
+  if (!profile) return { ok: false, reason: "not-configured" };
+  if (String(username ?? "").trim() !== profile.username) return { ok: false, reason: "invalid-recovery" };
+  const record = recoveryRecord(profile);
+  if (!record) return { ok: false, reason: "recovery-not-configured" };
+  const normalized = normalizeRecoveryCode(recoveryCode);
+  if (!normalized) return { ok: false, reason: "invalid-recovery" };
+  const ok = await verifyCredential(normalized, record);
+  return { ok, reason: ok ? null : "invalid-recovery", profile };
+}
+
+export async function resetCredentialWithRecovery({ username, recoveryCode, newSecret, method = "password" }) {
+  const result = await verifyRecoveryCode({ username, recoveryCode });
+  if (!result.ok) throw new Error("Código de recuperação inválido.");
+  const safeSecret = validateSecret(newSecret, method);
+  const verifier = await createCredentialVerifier(safeSecret);
+  const nextRecoveryCode = generateRecoveryCode();
+  const recovery = await buildRecoveryVerifier(nextRecoveryCode);
+  const profile = await writeProfile({
+    ...result.profile,
+    version: 2,
+    method,
+    ...verifier,
+    ...recovery,
+    updatedAt: new Date().toISOString()
+  });
+  return { profile, recoveryCode: nextRecoveryCode };
+}
+
+export async function regenerateRecoveryCode(currentSecret) {
+  const profile = await getAuthProfile();
+  if (!profile) throw new Error("Proteção não configurada.");
+  const currentOk = await verifyCredential(String(currentSecret ?? ""), profile);
+  if (!currentOk) throw new Error("Credencial atual incorreta.");
+  const recoveryCode = generateRecoveryCode();
+  const recovery = await buildRecoveryVerifier(recoveryCode);
+  const nextProfile = await writeProfile({ ...profile, version: 2, ...recovery, updatedAt: new Date().toISOString() });
+  return { profile: nextProfile, recoveryCode };
 }
 
 export async function changeCredential({ currentSecret, newSecret, method }) {
