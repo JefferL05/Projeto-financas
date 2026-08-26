@@ -5,7 +5,11 @@ export default defineConfig({
     environment: "node",
     globals: true,
     setupFiles: ["./tests/setup.js"],
-    include: ["tests/**/*.vitest.js"],
-    testTimeout: 10000
+    include: ["tests/**/*.vitest.js", "tests/**/*.test.js"],
+    testTimeout: 10000,
+    coverage: {
+      reporter: ["text", "json-summary"],
+      exclude: ["tests/**"]
+    }
   }
 });
