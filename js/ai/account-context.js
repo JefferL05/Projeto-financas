@@ -2,6 +2,7 @@ import { accountSummary, availableFunds, isLiabilityAccount, netWorth } from "..
 import { formatMoney } from "../utils.js";
 import { safeToSpend } from "../reports/report-engine.js";
 import { resolvePeriod } from "../finance/period-utils.js";
+import { calculateAmountToTarget, calculateAmountToZero } from "../finance/account-targets.js";
 
 function responseBase(intent, title) {
   return {
@@ -24,6 +25,111 @@ function convertedValue(value, currency, baseCurrency, rate) {
   return baseCurrency === "PYG" ? Number(value || 0) * rate : Number(value || 0) / rate;
 }
 
+function resolveRequestedAccount(route, accounts) {
+  if (route.entities?.accountId) {
+    return accounts.find((account) => account.id === route.entities.accountId && !account.archived) || null;
+  }
+
+  const currency = route.filters?.currency || route.entities?.currency || null;
+  if (!currency) return null;
+  const candidates = accounts.filter((account) => !account.archived && account.currency === currency);
+  return candidates.length === 1 ? candidates[0] : null;
+}
+
+function accountClarification(route, accounts) {
+  const candidates = route.entities?.accountCandidates || [];
+  if (route.entities?.accountAmbiguous && candidates.length) {
+    return `Encontrei mais de uma conta compatível: ${candidates.map((item) => item.name).join(", ")}. Qual delas você quer consultar?`;
+  }
+
+  const currency = route.filters?.currency || route.entities?.currency;
+  if (currency) {
+    const matches = accounts.filter((account) => !account.archived && account.currency === currency);
+    if (matches.length > 1) return `Qual conta em ${currency} você quer consultar? ${matches.map((item) => item.name).join(", ")}.`;
+    if (!matches.length) return `Não encontrei nenhuma conta ativa em ${currency}.`;
+  }
+
+  return "Entendi que você quer consultar uma conta, mas preciso saber qual conta ou moeda.";
+}
+
+function buildAccountBalanceResponse(route, accounts, transactions, baseCurrency, rate) {
+  const result = responseBase(route.intent, "Saldo da conta");
+  const account = resolveRequestedAccount(route, accounts);
+  if (!account) {
+    result.confidence = route.confidence;
+    result.clarification = accountClarification(route, accounts);
+    result.summary = "Preciso identificar a conta antes de calcular o saldo.";
+    return result;
+  }
+
+  const summary = accountSummary(account, transactions, { baseCurrency, rate });
+  result.summary = `${account.name}: ${formatMoney(summary.balance, account.currency)}.`;
+  result.metrics.push({ label: "Saldo", value: summary.balance, currency: account.currency, approximate: false });
+  result.observations.push("Saldo calculado localmente: saldo inicial + movimentações registradas na conta.");
+  return result;
+}
+
+function buildZeroBalanceResponse(route, accounts, transactions, baseCurrency, rate) {
+  const result = responseBase(route.intent, "Como zerar o saldo");
+  result.confidence = route.confidence;
+  const account = resolveRequestedAccount(route, accounts);
+  if (!account) {
+    result.summary = "Preciso identificar a conta antes de calcular o ajuste.";
+    result.clarification = accountClarification(route, accounts);
+    return result;
+  }
+
+  const summary = accountSummary(account, transactions, { baseCurrency, rate });
+  const adjustment = calculateAmountToZero(summary.balance);
+  result.metrics.push({ label: "Saldo atual", value: summary.balance, currency: account.currency, approximate: false });
+  result.metrics.push({ label: "Valor para zerar", value: adjustment.amount, currency: account.currency, approximate: false });
+  result.formula = "Valor para zerar = diferença entre o saldo atual calculado da conta e zero.";
+
+  if (adjustment.direction === "deposit") {
+    result.summary = `${account.name} está em ${formatMoney(summary.balance, account.currency)}. Para zerar a conta, você precisa adicionar ${formatMoney(adjustment.amount, account.currency)}. Depois disso, o saldo ficará em ${formatMoney(0, account.currency)}.`;
+    result.suggestedActions.push("Preparar uma entrada para cobrir o saldo negativo");
+  } else if (adjustment.direction === "withdraw") {
+    result.summary = `${account.name} está em ${formatMoney(summary.balance, account.currency)}. Para deixá-la exatamente em zero, seria necessário retirar ${formatMoney(adjustment.amount, account.currency)}.`;
+  } else {
+    result.summary = `${account.name} já está com saldo ${formatMoney(0, account.currency)}.`;
+  }
+
+  if (route.entities?.amount !== null && Number(route.entities.amount) !== Number(summary.balance)) {
+    result.observations.push(`Você mencionou ${formatMoney(route.entities.amount, account.currency)}, mas usei o saldo registrado na aplicação: ${formatMoney(summary.balance, account.currency)}.`);
+  }
+  result.observations.push("O cálculo usa o saldo real registrado no IndexedDB, não o valor informado na pergunta.");
+  return result;
+}
+
+function buildAccountTargetResponse(route, accounts, transactions, baseCurrency, rate) {
+  const result = responseBase(route.intent, "Quanto falta para a meta de saldo");
+  const account = resolveRequestedAccount(route, accounts);
+  if (!account) {
+    result.summary = "Preciso identificar a conta antes de calcular quanto falta.";
+    result.clarification = accountClarification(route, accounts);
+    return result;
+  }
+
+  const target = Number(route.entities?.targetAmount);
+  if (!Number.isFinite(target)) {
+    result.summary = "Entendi a conta, mas falta o valor-alvo.";
+    result.clarification = "Informe o valor que deseja atingir. Exemplo: “Quanto falta para chegar em 1 milhão?”.";
+    return result;
+  }
+
+  const summary = accountSummary(account, transactions, { baseCurrency, rate });
+  const adjustment = calculateAmountToTarget(summary.balance, target);
+  result.summary = adjustment.direction === "deposit"
+    ? `Faltam ${formatMoney(adjustment.amount, account.currency)} para ${account.name} chegar a ${formatMoney(target, account.currency)}.`
+    : adjustment.direction === "withdraw"
+      ? `${account.name} já está ${formatMoney(adjustment.amount, account.currency)} acima de ${formatMoney(target, account.currency)}.`
+      : `${account.name} já está exatamente em ${formatMoney(target, account.currency)}.`;
+  result.metrics.push({ label: "Saldo atual", value: summary.balance, currency: account.currency, approximate: false });
+  result.metrics.push({ label: "Meta", value: target, currency: account.currency, approximate: false });
+  result.formula = "Diferença entre o valor-alvo e o saldo atual calculado da conta.";
+  return result;
+}
+
 export function buildAccountResponse(route, {
   accounts = [],
   transactions = [],
@@ -34,6 +140,18 @@ export function buildAccountResponse(route, {
   baseCurrency = "PYG",
   now = new Date()
 } = {}) {
+  if (route.intent === "account_balance") {
+    return buildAccountBalanceResponse(route, accounts, transactions, baseCurrency, rate);
+  }
+
+  if (route.intent === "account_zero_balance") {
+    return buildZeroBalanceResponse(route, accounts, transactions, baseCurrency, rate);
+  }
+
+  if (route.intent === "account_target") {
+    return buildAccountTargetResponse(route, accounts, transactions, baseCurrency, rate);
+  }
+
   if (route.intent === "available_funds") {
     const result = responseBase(route.intent, "Dinheiro disponível");
     const value = availableFunds(accounts, transactions, { baseCurrency, rate });
