@@ -1,8 +1,10 @@
 import {
   changeCredential,
-  createProtection,
+  createProtectionWithRecovery,
   disableProtection,
   getAuthProfile,
+  regenerateRecoveryCode,
+  resetCredentialWithRecovery,
   updateAuthPreferences,
   verifyAccess
 } from "./auth-service.js";
@@ -55,17 +57,46 @@ function buildShell(title, subtitle) {
   return { overlay, card };
 }
 
-function addShowToggle(secretInput, card) {
-  const button = node("button", "auth-link", "Mostrar senha");
+function addShowToggle(secretInput, card, label = "Mostrar senha") {
+  const button = node("button", "auth-link", label);
   button.type = "button";
-  button.setAttribute("aria-label", "Mostrar senha");
+  button.setAttribute("aria-label", label);
   button.addEventListener("click", () => {
     const visible = secretInput.type === "text";
     secretInput.type = visible ? "password" : "text";
-    button.textContent = visible ? "Mostrar senha" : "Ocultar senha";
+    button.textContent = visible ? label : "Ocultar senha";
     button.setAttribute("aria-label", button.textContent);
   });
   card.append(button);
+}
+
+async function copyRecoveryCode(code, feedback) {
+  try {
+    await navigator.clipboard.writeText(code);
+    feedback.textContent = "Código copiado. Guarde-o fora deste dispositivo.";
+  } catch {
+    feedback.textContent = "Não foi possível copiar automaticamente. Anote o código manualmente.";
+  }
+}
+
+function showRecoveryCode(card, recoveryCode, onContinue, title = "Guarde seu código de recuperação") {
+  card.querySelectorAll(".auth-form, .auth-link, .auth-footnote, .auth-recovery").forEach((element) => element.remove());
+  const box = node("div", "auth-recovery");
+  const heading = node("h2", "auth-title", title);
+  const warning = node("p", "auth-subtitle", "Este código permite redefinir sua senha ou PIN. Ele será mostrado somente agora e não é salvo em texto puro.");
+  const code = node("code", "auth-recovery-code", recoveryCode);
+  code.id = "authRecoveryCode";
+  const feedback = node("p", "auth-footnote", "Guarde em um local seguro, separado do aparelho.");
+  feedback.setAttribute("aria-live", "polite");
+  const copy = node("button", "auth-link", "Copiar código");
+  copy.type = "button";
+  copy.addEventListener("click", () => copyRecoveryCode(recoveryCode, feedback));
+  const done = node("button", "auth-submit", "Já guardei, continuar");
+  done.type = "button";
+  done.addEventListener("click", onContinue);
+  box.append(heading, warning, code, copy, feedback, done);
+  card.append(box);
+  done.focus();
 }
 
 async function setupScreen() {
@@ -99,17 +130,75 @@ async function setupScreen() {
       if (secret.value !== confirm.value) { error.textContent = "A confirmação não corresponde."; return; }
       submit.disabled = true;
       try {
-        const profile = await createProtection({ username: username.value, secret: secret.value, method: method.value });
+        const { profile, recoveryCode } = await createProtectionWithRecovery({ username: username.value, secret: secret.value, method: method.value });
         secret.value = confirm.value = "";
-        unlockSession(profile);
-        overlay.remove();
-        resolve(profile);
+        showRecoveryCode(card, recoveryCode, () => {
+          unlockSession(profile);
+          overlay.remove();
+          resolve(profile);
+        });
       } catch (err) {
         error.textContent = err?.message || "Não foi possível criar a proteção.";
-      } finally { submit.disabled = false; }
+        submit.disabled = false;
+      }
     });
     queueMicrotask(() => username.focus());
   });
+}
+
+function showRecoveryForm({ card, overlay, profile, resolve }) {
+  card.querySelectorAll(".auth-form, .auth-link, .auth-footnote, .auth-recovery").forEach((element) => element.remove());
+  const form = node("form", "auth-form");
+  const username = input("authRecoveryUser", "text", "username");
+  username.value = profile.username;
+  const recovery = input("authRecoveryInput", "text", "off");
+  recovery.placeholder = "PF-XXXX-XXXX-XXXX-XXXX-XXXX";
+  recovery.autocapitalize = "characters";
+  const method = document.createElement("select");
+  method.id = "authRecoveryMethod";
+  method.className = "auth-input";
+  [["password", "Nova senha"], ["pin", "Novo PIN"]].forEach(([value, label]) => {
+    const option = document.createElement("option"); option.value = value; option.textContent = label; method.append(option);
+  });
+  const secret = input("authRecoverySecret", "password", "new-password");
+  const confirm = input("authRecoveryConfirm", "password", "new-password");
+  const error = errorRegion();
+  const submit = node("button", "auth-submit", "Redefinir acesso"); submit.type = "submit";
+  const cancel = node("button", "auth-link", "Voltar ao login"); cancel.type = "button";
+  form.append(field("Usuário", username), field("Código de recuperação", recovery), field("Novo método", method), field("Nova senha ou PIN", secret), field("Confirmar nova credencial", confirm), error, submit);
+  card.append(form, cancel, node("p", "auth-footnote", "A recuperação é totalmente local. Não existe envio por e-mail, SMS ou WhatsApp."));
+  addShowToggle(secret, card);
+
+  method.addEventListener("change", () => {
+    secret.inputMode = method.value === "pin" ? "numeric" : "text";
+    confirm.inputMode = secret.inputMode;
+  });
+  cancel.addEventListener("click", () => { overlay.remove(); loginScreen(profile).then(resolve); });
+  form.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    error.textContent = "";
+    if (secret.value !== confirm.value) { error.textContent = "A confirmação não corresponde."; return; }
+    submit.disabled = true;
+    try {
+      const result = await resetCredentialWithRecovery({
+        username: username.value,
+        recoveryCode: recovery.value,
+        newSecret: secret.value,
+        method: method.value
+      });
+      secret.value = confirm.value = recovery.value = "";
+      showRecoveryCode(card, result.recoveryCode, () => {
+        unlockSession(result.profile);
+        overlay.remove();
+        resolve(result.profile);
+      }, "Novo código de recuperação");
+    } catch (err) {
+      error.textContent = err?.message || "Não foi possível recuperar o acesso.";
+      submit.disabled = false;
+      recovery.focus();
+    }
+  });
+  recovery.focus();
 }
 
 async function loginScreen(profile) {
@@ -125,7 +214,7 @@ async function loginScreen(profile) {
     form.append(field("Usuário", username), field(profile.method === "pin" ? "PIN" : "Senha", secret), error, submit);
     card.append(form);
     addShowToggle(secret, card);
-    card.append(forgot, node("p", "auth-footnote", "🔒 A proteção funciona localmente e não possui recuperação por e-mail, SMS ou WhatsApp."));
+    card.append(forgot, node("p", "auth-footnote", "🔑 Esqueceu? Use o código de recuperação salvo no primeiro acesso."));
 
     let failures = 0;
     form.addEventListener("submit", async (event) => {
@@ -142,9 +231,7 @@ async function loginScreen(profile) {
       } catch { error.textContent = "Não foi possível validar o acesso."; }
       finally { submit.disabled = false; }
     });
-    forgot.addEventListener("click", () => {
-      error.textContent = "Este aplicativo é local e não possui recuperação por e-mail. Se a proteção for removida, isso deve ser feito com a credencial atual.";
-    });
+    forgot.addEventListener("click", () => showRecoveryForm({ card, overlay, profile, resolve }));
     queueMicrotask(() => secret.focus());
   });
 }
@@ -161,13 +248,14 @@ export async function mountSecuritySettings(container) {
   card.append(node("h2", "", "Segurança e privacidade"));
   const status = node("p", "muted", `Proteção de acesso: ativada · Método: ${profile.method === "pin" ? "PIN" : "Senha"}`);
   const select = document.createElement("select"); select.className = "input"; select.id = "authAutoLock";
-  [[0,"Nunca"],[1,"1 minuto"],[5,"5 minutos"],[15,"15 minutos"],[30,"30 minutos"]].forEach(([value,label]) => { const o=document.createElement("option");o.value=String(value);o.textContent=label;select.append(o); });
+  [[0,"Nunca"],[1,"1 minuto"],[5,"5 minutos"],[15,"15 minutos"],[30,"30 minutos"]].forEach(([value,label]) => { const option=document.createElement("option");option.value=String(value);option.textContent=label;select.append(option); });
   select.value = String(profile.autoLockMinutes ?? 5);
   const actions = node("div", "button-stack");
   const lock = node("button", "btn btn-secondary", "Bloquear agora"); lock.type = "button";
   const change = node("button", "btn btn-secondary", "Alterar senha/PIN"); change.type = "button";
+  const recovery = node("button", "btn btn-secondary", "Gerar novo código de recuperação"); recovery.type = "button";
   const disable = node("button", "btn btn-danger", "Desativar proteção"); disable.type = "button";
-  actions.append(lock, change, disable);
+  actions.append(lock, change, recovery, disable);
   card.append(status, field("Bloqueio automático", select), actions);
   container.append(card);
 
@@ -179,6 +267,14 @@ export async function mountSecuritySettings(container) {
     const method = /^\d{4,8}$/.test(next) ? "pin" : "password";
     try { await changeCredential({ currentSecret: current, newSecret: next, method }); alert("Credencial alterada."); location.reload(); }
     catch (err) { alert(err?.message || "Não foi possível alterar."); }
+  });
+  recovery.addEventListener("click", async () => {
+    const current = prompt("Digite sua senha/PIN atual para gerar um novo código:"); if (current === null) return;
+    try {
+      const result = await regenerateRecoveryCode(current);
+      const message = `Novo código de recuperação:\n\n${result.recoveryCode}\n\nGuarde-o em local seguro. O código anterior foi invalidado.`;
+      alert(message);
+    } catch (err) { alert(err?.message || "Não foi possível gerar o código."); }
   });
   disable.addEventListener("click", async () => {
     const current = prompt("Digite sua senha/PIN atual para desativar a proteção:"); if (current === null) return;
