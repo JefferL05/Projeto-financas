@@ -15,6 +15,7 @@ async function createBRLTransaction(page, { amount = "25,00", description = "Tes
   await page.locator("#txCategory").selectOption({ label: category });
   await page.locator("#txDescription").fill(description);
   await page.locator("#saveTransactionBtn").click();
+  await expect(page.locator("#transactionDialog")).not.toBeVisible();
   await expect(page.locator("#recentTransactions")).toContainText(description);
 }
 
@@ -72,10 +73,13 @@ test("E2E 4 — cartão aumenta dívida e pagamento por transferência reduz", a
   await page.locator("#newTransactionBtn").click();
   await page.locator("#txCurrency").selectOption("BRL");
   await page.locator("#txAccount").selectOption(cardId);
+  await expect(page.locator("#txAccount")).toHaveValue(cardId);
   await page.locator("#txAmount").fill("200");
   await page.locator("#txCategory").selectOption({ label: "Compras" });
   await page.locator("#txDescription").fill("Compra no cartão E2E");
   await page.locator("#saveTransactionBtn").click();
+  await expect(page.locator("#transactionDialog")).not.toBeVisible();
+  await expect(page.locator("#recentTransactions")).toContainText("Compra no cartão E2E");
 
   await page.goto("/gestao.html");
   await expect(page.locator("#accountsList")).toContainText("1.200,00");
@@ -86,6 +90,7 @@ test("E2E 4 — cartão aumenta dívida e pagamento por transferência reduz", a
   await page.locator("#transferDestinationAmount").fill("300");
   await page.locator("#transferForm button[type=submit]").click();
   await page.getByRole("button", { name: "Confirmar transferência" }).click();
+  await expect(page.locator("#toast")).toContainText("Transferência registrada");
   await page.locator('[data-tab="accounts"]').click();
   await expect(page.locator("#accountsList")).toContainText("900,00");
 });
