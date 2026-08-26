@@ -19,42 +19,63 @@ export function uid(prefix = "tx") {
   return crypto.randomUUID?.() || `${prefix}-${Date.now()}-${Math.random().toString(16).slice(2)}`;
 }
 
-export function parseLooseNumber(input, { localeHint = null } = {}) {
-  let raw = String(input ?? "").trim().replace(/[^\d,.-]/g, "");
-  raw = raw.replace(/^-/, "");
+/**
+ * Faz parsing de números nos formatos pt-BR/es-PY/en-US.
+ *
+ * Por padrão o retorno nunca é negativo, preservando o comportamento esperado
+ * para valores de transações. Use allowNegative somente em campos onde um valor
+ * assinado é semanticamente válido, como saldo inicial e conciliação.
+ */
+export function parseLooseNumber(input, { localeHint = null, allowNegative = false } = {}) {
+  const original = String(input ?? "").trim();
+  const isNegative = /^\s*[^\d]*-/.test(original);
+  let raw = original.replace(/[^\d,.-]/g, "").replace(/-/g, "");
+
   if (!raw) return 0;
 
   const hasComma = raw.includes(",");
   const hasDot = raw.includes(".");
+  let parsed;
 
   if (hasComma && hasDot) {
-    if (localeHint === "en-US") return Number(raw.replace(/,/g, ""));
-    if (localeHint === "pt-BR") return Number(raw.replace(/\./g, "").replace(",", "."));
-
-    const decimalSeparator = raw.lastIndexOf(",") > raw.lastIndexOf(".") ? "," : ".";
-    return decimalSeparator === ","
-      ? Number(raw.replace(/\./g, "").replace(",", "."))
-      : Number(raw.replace(/,/g, ""));
-  }
-
-  if (hasComma) {
+    if (localeHint === "en-US") {
+      parsed = Number(raw.replace(/,/g, ""));
+    } else if (localeHint === "pt-BR" || localeHint === "es-PY") {
+      parsed = Number(raw.replace(/\./g, "").replace(",", "."));
+    } else {
+      const decimalSeparator = raw.lastIndexOf(",") > raw.lastIndexOf(".") ? "," : ".";
+      parsed = decimalSeparator === ","
+        ? Number(raw.replace(/\./g, "").replace(",", "."))
+        : Number(raw.replace(/,/g, ""));
+    }
+  } else if (hasComma) {
     const parts = raw.split(",");
-    return parts.length === 2 && parts[1].length === 2
+    parsed = parts.length === 2 && parts[1].length === 2
       ? Number(raw.replace(",", "."))
       : Number(raw.replace(/,/g, ""));
-  }
-
-  if (hasDot) {
+  } else if (hasDot) {
     const parts = raw.split(".");
-    if (localeHint === "pt-BR" && parts.length === 2 && parts[1].length === 3) {
-      return Number(raw.replace(/\./g, ""));
+    if ((localeHint === "pt-BR" || localeHint === "es-PY") && parts.length === 2 && parts[1].length === 3) {
+      parsed = Number(raw.replace(/\./g, ""));
+    } else {
+      parsed = parts.length === 2 && parts[1].length === 2
+        ? Number(raw)
+        : Number(raw.replace(/\./g, ""));
     }
-    return parts.length === 2 && parts[1].length === 2
-      ? Number(raw)
-      : Number(raw.replace(/\./g, ""));
+  } else {
+    parsed = Number(raw);
   }
 
-  return Number(raw);
+  if (!Number.isFinite(parsed)) return 0;
+  return allowNegative && isNegative ? -Math.abs(parsed) : Math.abs(parsed);
+}
+
+export function parseTransactionAmount(input, options = {}) {
+  return parseLooseNumber(input, { ...options, allowNegative: false });
+}
+
+export function parseSignedAmount(input, options = {}) {
+  return parseLooseNumber(input, { ...options, allowNegative: true });
 }
 
 export function formatMoney(value, currency) {
@@ -92,8 +113,13 @@ export function normalizeToPYG(amount, currency, brlToPyg) {
   return currency === "PYG" ? Number(amount) || 0 : (Number(amount) || 0) * brlToPyg;
 }
 
+/**
+ * Evita CSV Formula Injection em Excel/LibreOffice sem alterar o dado salvo.
+ * Prefixa valores potencialmente interpretados como fórmula apenas na exportação.
+ */
 export function csvEscape(value) {
-  const text = String(value ?? "");
+  let text = String(value ?? "");
+  if (/^[=+\-@]/.test(text)) text = `'${text}`;
   if (/[;"\n]/.test(text)) return `"${text.replace(/"/g, '""')}"`;
   return text;
 }
