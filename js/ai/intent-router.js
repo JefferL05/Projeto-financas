@@ -2,6 +2,7 @@ import { extractPeriodFromText, resolvePeriod } from "../finance/period-utils.js
 import { todayLocalISO, yesterdayLocalISO } from "../finance/date-utils.js";
 import { normalizeText } from "./validators.js";
 import { parseLooseNumber } from "../utils.js";
+import { extractFinancialEntities, normalizeFinancialQuestion } from "./entity-extractor.js";
 
 const INTENTS = new Set([
   "spending_summary",
@@ -18,6 +19,9 @@ const INTENTS = new Set([
   "available_funds",
   "net_worth",
   "liabilities",
+  "account_balance",
+  "account_zero_balance",
+  "account_target",
   "upcoming_commitments",
   "reconciliation_status",
   "safe_to_spend",
@@ -118,6 +122,28 @@ function detectRuleEntities(original, q, categories) {
   return { needle, category: requestedCategory };
 }
 
+function scoreSemanticIntents(q, entities, memory) {
+  const scores = new Map();
+  const add = (intent, score) => scores.set(intent, (scores.get(intent) || 0) + score);
+
+  if (/(?:zerar|ficar zerad|deixar.+zero|sair do negativo|sair do vermelho|cobrir saldo)/.test(q)) add("account_zero_balance", 0.75);
+  if (/(?:quanto falta.+zerar|quanto preciso (?:colocar|depositar)|quanto tenho que depositar)/.test(q)) add("account_zero_balance", 0.72);
+  if (entities.action === "zero_balance") add("account_zero_balance", 0.22);
+  if (entities.direction === "negative" && /(?:conta|carteira|saldo|guarani|real|pyg|brl)/.test(q)) add("account_zero_balance", 0.18);
+
+  if (/(?:quanto tenho|qual.*saldo|saldo da|saldo na|saldo em)/.test(q)) add("account_balance", 0.72);
+  if (/(?:conta|carteira)/.test(q) && entities.currency) add("account_balance", 0.14);
+
+  if (/(?:quanto falta.+(?:chegar|atingir)|chegar em|atingir)/.test(q) && entities.amount !== null) add("account_target", 0.78);
+  if (/^e quanto falta/.test(q) && memory?.lastIntent === "account_balance") add("account_target", 0.16);
+
+  if (/(?:quanto devo|estou devendo|divida|dívida|cartao|cartão)/.test(q)) add("liabilities", 0.82);
+  if (/(?:quanto tenho disponivel|quanto tenho disponível|dinheiro disponivel|dinheiro disponível|tenho dinheiro pra gastar)/.test(q)) add("available_funds", 0.9);
+  if (/(?:patrimonio|patrimônio|quanto tenho no total|somando tudo)/.test(q)) add("net_worth", 0.9);
+
+  return [...scores.entries()].sort((a, b) => b[1] - a[1])[0] || [null, 0];
+}
+
 export function routeIntent(question, {
   categories = [],
   accounts = [],
@@ -126,9 +152,10 @@ export function routeIntent(question, {
   now = new Date()
 } = {}) {
   const original = String(question || "").trim();
-  const q = normalizeText(original).toLowerCase();
+  const q = normalizeFinancialQuestion(original);
+  const extracted = extractFinancialEntities(original, { accounts });
   let period = extractPeriodFromText(q, now);
-  let currency = detectCurrency(q);
+  let currency = extracted.currency || detectCurrency(q);
   let category = detectCategory(q, categories);
   const type = /receita|entrada|recebi|salario/.test(q)
     ? "income"
@@ -137,15 +164,21 @@ export function routeIntent(question, {
       : null;
   const tags = [...q.matchAll(/#([a-z0-9_-]+)/g)].map((match) => match[1]);
 
-  if (!category && /e no mes passado|e no mês passado|e ontem|e hoje/.test(q)) {
+  if (!category && /e no mes passado|e ontem|e hoje/.test(q)) {
     category = memory?.lastFilters?.category || null;
   }
-  if (!currency && /^e\b/.test(q)) currency = memory?.lastFilters?.currency || null;
+  if (!currency && (/^e\b/.test(q) || /^(?:a|da|de)\s+(?:guarani|real)/.test(q))) {
+    currency = memory?.lastFilters?.currency || null;
+  }
 
   let intent = "unknown";
   let confidence = 0.45;
+  const [semanticIntent, semanticScore] = scoreSemanticIntents(q, extracted, memory);
 
-  if (/\btransfira|\btransferir|\btransfere/.test(q)) {
+  if (semanticIntent && semanticScore >= 0.8) {
+    intent = semanticIntent;
+    confidence = Math.min(0.98, semanticScore);
+  } else if (/\btransfira|\btransferir|\btransfere/.test(q)) {
     intent = "create_transfer";
     confidence = 0.93;
   } else if (/marque.+(?:paga|pago)|marcar.+(?:paga|pago)/.test(q)) {
@@ -154,25 +187,25 @@ export function routeIntent(question, {
   } else if (/crie.+regra|criar.+regra|regra.+categor/.test(q)) {
     intent = "create_rule";
     confidence = 0.88;
-  } else if (/quanto tenho disponivel|quanto tenho disponível|dinheiro disponivel|dinheiro disponível/.test(q)) {
+  } else if (/quanto tenho disponivel|dinheiro disponivel/.test(q)) {
     intent = "available_funds";
     confidence = 0.94;
-  } else if (/patrimonio|patrimônio|quanto tenho no total/.test(q)) {
+  } else if (/patrimonio|quanto tenho no total/.test(q)) {
     intent = "net_worth";
     confidence = 0.93;
-  } else if (/quanto devo|divida|dívida|cartao|cartão/.test(q)) {
+  } else if (/quanto devo|divida|cartao/.test(q)) {
     intent = "liabilities";
     confidence = 0.87;
-  } else if (/contas? vence|vence esta|vencem|compromiss|proximas contas|próximas contas/.test(q)) {
+  } else if (/contas? vence|vence esta|vencem|compromiss|proximas contas/.test(q)) {
     intent = "upcoming_commitments";
     confidence = 0.9;
-  } else if (/conciliad|conciliacao|conciliação/.test(q)) {
+  } else if (/conciliad|conciliacao/.test(q)) {
     intent = "reconciliation_status";
     confidence = 0.9;
   } else if (/seguro para gastar|valor seguro|posso gastar sem comprometer/.test(q)) {
     intent = "safe_to_spend";
     confidence = 0.9;
-  } else if (/registre|registrar|adicione|adicionar|lance|lancar|lançar/.test(q)) {
+  } else if (/registre|registrar|adicione|adicionar|lance|lancar/.test(q)) {
     intent = "create_transaction";
     confidence = 0.93;
   } else if (/altere|alterar|mude|corrija/.test(q)) {
@@ -181,25 +214,25 @@ export function routeIntent(question, {
   } else if (/exclua|excluir|apague|remova/.test(q)) {
     intent = "delete_transaction";
     confidence = 0.91;
-  } else if (/compare|comparacao|comparação|mes passado|mês passado/.test(q)) {
+  } else if (/compare|comparacao|mes passado/.test(q)) {
     intent = "compare_periods";
     confidence = 0.9;
   } else if (/recorr|assinatura/.test(q)) {
     intent = "recurring";
     confidence = 0.94;
-  } else if (/anormal|fora do normal|fora do padrao|fora do padrão/.test(q)) {
+  } else if (/anormal|fora do normal|fora do padrao/.test(q)) {
     intent = "anomalies";
     confidence = 0.94;
-  } else if (/orcamento|orçamento|limite/.test(q)) {
+  } else if (/orcamento|limite/.test(q)) {
     intent = "budgets";
     confidence = 0.88;
-  } else if (/meta|objetivo|guardar por mes|guardar por mês|alcancarei|alcançarei/.test(q)) {
+  } else if (/meta|objetivo|guardar por mes|alcancarei/.test(q)) {
     intent = "goals";
     confidence = 0.88;
   } else if (/poup|economizando|economizar/.test(q)) {
     intent = "savings";
     confidence = 0.87;
-  } else if (/projec|fim do mes|fim do mês|quanto posso gastar/.test(q)) {
+  } else if (/projec|fim do mes|quanto posso gastar/.test(q)) {
     intent = "projection";
     confidence = 0.87;
   } else if (/receita|entrada|recebi/.test(q)) {
@@ -214,16 +247,44 @@ export function routeIntent(question, {
   } else if (/gastei|gastos|despesa|onde estou gastando|onde gasto/.test(q)) {
     intent = "spending_summary";
     confidence = 0.82;
+  } else if (semanticIntent && semanticScore >= 0.55) {
+    intent = semanticIntent;
+    confidence = semanticScore;
   }
 
-  if (intent === "compare_periods" && /este mes|este mês|mes atual|mês atual/.test(q)) {
+  if (intent === "compare_periods" && /este mes|mes atual/.test(q)) {
     period = resolvePeriod("this_month", now);
   }
 
   const money = extractAmountAndCurrency(original, q);
   if (!currency) currency = money.currency;
   const filters = { period, currency, category, type, tags };
-  const result = { intent, confidence, filters, entities: {}, raw: original };
+  const result = {
+    intent,
+    confidence,
+    filters,
+    entities: {
+      amount: extracted.amount,
+      currency,
+      accountId: extracted.accountId,
+      accountName: extracted.accountName,
+      accountAmbiguous: extracted.accountAmbiguous,
+      accountCandidates: extracted.accountCandidates,
+      action: extracted.action,
+      direction: extracted.direction
+    },
+    raw: original
+  };
+
+  if (["account_balance", "account_zero_balance", "account_target"].includes(intent)) {
+    result.entities.targetAmount = intent === "account_target" && extracted.amount !== null
+      ? Math.abs(extracted.amount)
+      : null;
+    if (extracted.accountAmbiguous) result.confidence = Math.min(result.confidence, 0.76);
+    if (!extracted.accountId && !currency && !memory?.lastFilters?.currency) {
+      result.confidence = Math.min(result.confidence, 0.72);
+    }
+  }
 
   if (intent === "create_transaction") {
     result.entities = {
@@ -243,7 +304,7 @@ export function routeIntent(question, {
       currency,
       category,
       date: explicitRelativeDate(q, now),
-      last: /ultima|última/.test(q)
+      last: /ultima/.test(q)
     };
   }
 
