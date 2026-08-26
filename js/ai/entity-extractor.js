@@ -104,6 +104,9 @@ export function extractFinancialEntities(question, { accounts = [] } = {}) {
       ? "negative"
       : null;
 
+  const mutationRequested = /^(?:coloca|coloque|adicione|adiciona|deposita|deposite|registre|registra|lance|lan[cç]a)\b/.test(normalized)
+    || /(?:pode|consegue)\s+(?:colocar|adicionar|depositar|registrar)/.test(normalized);
+
   return {
     original,
     normalized,
@@ -118,6 +121,7 @@ export function extractFinancialEntities(question, { accounts = [] } = {}) {
       currency: account.currency
     })),
     action,
-    direction
+    direction,
+    mutationRequested
   };
 }
