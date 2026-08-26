@@ -73,9 +73,54 @@ describe("intenção account_zero_balance", () => {
     expect(route.entities.accountId).toBe("account-wallet-pyg");
   });
 
+  test("entende saldo negativo sem verbo exato", () => {
+    const route = routeIntent("Minha guarani tá -99, como arrumo isso?", { accounts });
+    expect(route.intent).toBe("account_zero_balance");
+    expect(route.entities.accountId).toBe("account-wallet-pyg");
+  });
+
   test("não confunde gasto comum com zerar conta", () => {
     const route = routeIntent("Quanto gastei no mercado este mês?", { accounts, categories: ["Mercado"] });
     expect(route.intent).not.toBe("account_zero_balance");
+  });
+});
+
+describe("continuidade conversacional", () => {
+  test("continua intenção de saldo negativo quando usuário responde só a moeda", () => {
+    const memory = {
+      lastIntent: "account_zero_balance",
+      lastFilters: { currency: null, category: null, period: null }
+    };
+    const route = routeIntent("A de Guarani", { accounts, memory });
+    expect(route.intent).toBe("account_zero_balance");
+    expect(route.filters.currency).toBe("PYG");
+    expect(route.entities.accountId).toBe("account-wallet-pyg");
+  });
+
+  test("continua consulta de gastos adicionando período", () => {
+    const memory = {
+      lastIntent: "spending_summary",
+      lastFilters: { currency: null, category: null, period: null }
+    };
+    const route = routeIntent("Esse mês", { accounts, categories: ["Mercado"], memory, now: new Date(2026, 7, 20, 12) });
+    expect(route.intent).toBe("spending_summary");
+    expect(route.filters.period).toBeTruthy();
+  });
+
+  test("continua consulta de gastos adicionando categoria", () => {
+    const memory = {
+      lastIntent: "spending_summary",
+      lastFilters: { currency: null, category: null, period: { start: "2026-08-01", end: "2026-08-31", key: "this_month" } }
+    };
+    const route = routeIntent("Com mercado", { accounts, categories: ["Mercado"], memory });
+    expect(route.intent).toBe("category_spending");
+    expect(route.filters.category).toBe("Mercado");
+    expect(route.filters.period?.start).toBe("2026-08-01");
+  });
+
+  test("entende destino do dinheiro como resumo de gastos", () => {
+    const route = routeIntent("Pra onde está indo meu dinheiro?", { accounts });
+    expect(route.intent).toBe("spending_summary");
   });
 });
 
