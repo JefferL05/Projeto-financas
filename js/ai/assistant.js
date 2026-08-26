@@ -19,6 +19,9 @@ const MUTATION_INTENTS = new Set([
   "create_rule"
 ]);
 const ACCOUNT_INTENTS = new Set([
+  "account_balance",
+  "account_zero_balance",
+  "account_target",
   "available_funds",
   "net_worth",
   "liabilities",
@@ -33,10 +36,11 @@ function loadMemory() {
     return {
       messages: Array.isArray(raw.messages) ? raw.messages.slice(-MAX_MESSAGES) : [],
       lastIntent: raw.lastIntent || null,
-      lastFilters: raw.lastFilters || null
+      lastFilters: raw.lastFilters || null,
+      lastEntities: raw.lastEntities || null
     };
   } catch {
-    return { messages: [], lastIntent: null, lastFilters: null };
+    return { messages: [], lastIntent: null, lastFilters: null, lastEntities: null };
   }
 }
 
@@ -309,6 +313,33 @@ function buildTransactionMutation(route, transactions, accounts, rate) {
   return base;
 }
 
+function enrichRouteFromMemory(route, memory, accounts) {
+  const entities = { ...(route.entities || {}) };
+  const filters = { ...(route.filters || {}) };
+
+  if (!entities.accountId && memory.lastEntities?.accountId) {
+    const remembered = accounts.find((account) => account.id === memory.lastEntities.accountId && !account.archived);
+    if (remembered) {
+      entities.accountId = remembered.id;
+      entities.accountName = remembered.name;
+      if (!filters.currency) filters.currency = remembered.currency;
+      if (!entities.currency) entities.currency = remembered.currency;
+    }
+  }
+
+  if (!filters.currency && memory.lastFilters?.currency) filters.currency = memory.lastFilters.currency;
+  if (!filters.category && memory.lastFilters?.category) filters.category = memory.lastFilters.category;
+
+  if (route.intent === "unknown" && /^e quanto falta/.test(String(route.raw || "").toLowerCase()) && memory.lastIntent === "account_balance") {
+    route.intent = "account_target";
+    route.confidence = 0.86;
+  }
+
+  route.entities = entities;
+  route.filters = filters;
+  return route;
+}
+
 export async function askFinancialAssistant({
   question,
   transactions = [],
@@ -324,9 +355,14 @@ export async function askFinancialAssistant({
   signal
 }) {
   const memory = loadMemory();
-  const route = routeIntent(question, { categories, accounts, schedules, memory });
+  const route = enrichRouteFromMemory(
+    routeIntent(question, { categories, accounts, schedules, memory }),
+    memory,
+    accounts
+  );
   memory.lastIntent = route.intent;
   memory.lastFilters = route.filters;
+  memory.lastEntities = route.entities;
   remember(memory, "user", question);
 
   if (MUTATION_INTENTS.has(route.intent)) {
