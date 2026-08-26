@@ -1,76 +1,76 @@
 # Projeto Finanças 🇵🇾 🇧🇷
 
-Aplicação web de gestão financeira pessoal multi-moeda construída com HTML, CSS e JavaScript ES Modules, com funcionamento local-first, IndexedDB e PWA.
+Aplicação web de gestão financeira pessoal multi-moeda, local-first, construída com HTML, CSS e JavaScript ES Modules. O projeto funciona sem backend obrigatório, persiste dados em IndexedDB e é compatível com GitHub Pages/PWA.
 
-## Recursos principais
+## Stack
 
-- Entradas e saídas em PYG e BRL
-- Dashboard multi-moeda e patrimônio consolidado
-- Cotação manual e consulta opcional BRL → PYG
-- Categorias, tags, busca e filtros
-- Importação rápida de anotações
-- Importação/exportação JSON e CSV
-- Metas de longo prazo
-- Orçamentos mensais por categoria
-- Analytics e projeções
-- Detecção local de recorrências e gastos fora do padrão
-- Assistente financeiro híbrido com fallback offline
-- PWA/Service Worker
+- HTML5
+- CSS3
+- JavaScript ES Modules
+- IndexedDB
+- Chart.js com fallback Canvas local
+- Service Worker + Web App Manifest
+- Vitest + fake-indexeddb para testes unitários
+- GitHub Actions para CI
 
-## Arquitetura do assistente
+## Funcionalidades atuais
 
-O modelo externo nunca é responsável pelos cálculos financeiros principais. O fluxo é:
+- Entradas e saídas em BRL e PYG
+- Contas manuais em BRL/PYG
+- Ativos e passivos
+- Cartão de crédito e empréstimos manuais
+- Transferências atômicas entre contas
+- Conciliação manual
+- Categorias e tags
+- Importação rápida de texto
+- Importação/exportação CSV
+- Backup/restauração JSON completo
+- Metas financeiras
+- Orçamentos por categoria
+- Agendamentos e compromissos
+- Parcelamentos por agenda
+- Regras locais de categorização
+- Relatórios e analytics
+- Histórico/captura de cotação BRL → PYG
+- Assistente financeiro local
+- IA online opcional por backend seguro
+- PWA/offline
 
-1. `IndexedDB` armazena os dados.
-2. `js/finance/analytics-engine.js` valida e calcula métricas.
-3. `js/ai/intent-router.js` interpreta a pergunta e extrai período/filtros.
-4. `js/ai/local-engine.js` gera uma resposta estruturada usando os cálculos locais.
-5. Se a IA online estiver habilitada e houver consentimento, `js/ai/online-provider.js` envia somente contexto minimizado para um backend seguro.
-6. Se o backend falhar, o assistente continua com análise local.
-7. `js/ai/response-renderer.js` renderiza respostas usando criação de DOM e `textContent`.
-
-### Módulos
+## Arquitetura
 
 ```text
-js/
-├── ai/
-│   ├── assistant.js
-│   ├── context-builder.js
-│   ├── intent-router.js
-│   ├── local-engine.js
-│   ├── online-provider.js
-│   ├── privacy.js
-│   ├── response-renderer.js
-│   └── validators.js
-├── finance/
-│   ├── analytics-engine.js
-│   ├── anomaly-detector.js
-│   ├── budget-engine.js
-│   ├── period-utils.js
-│   ├── projections.js
-│   └── recurring-detector.js
-├── app.js
-├── db.js
-├── inteligencia.js
-├── parser.js
-└── utils.js
+UI
+├── index.html          Dashboard, transações, dados e configurações
+├── gestao.html        Contas, transferências, conciliação e compromissos
+└── inteligencia.html  Assistente, metas, orçamentos e planejamento
+
+Controladores
+├── js/app.js
+├── js/gestao.js
+└── js/inteligencia.js
+
+Domínio
+├── js/accounts/
+├── js/ai/
+├── js/data/
+├── js/finance/
+├── js/reports/
+├── js/rules/
+└── js/transactions/
+
+Persistência
+└── js/db.js → IndexedDB
 ```
 
-## IndexedDB e migração
+Os cálculos financeiros permanecem determinísticos e locais. A IA online, quando habilitada, apenas explica contexto previamente calculado e nunca deve recalcular ou substituir números do motor financeiro.
 
-Banco: `ProjetoFinancasDB`.
+## IndexedDB
 
-Versão atual: **5**.
+Banco: `ProjetoFinancasDB`
 
-A migração é incremental e não remove stores existentes. A versão 5 adiciona a store `budgets`, preservando:
+Versão atual: **6**
 
-- `transactions`
-- `settings`
-- `categories`
-- `exchangeRates`
-- `goals`
-
-Stores atuais:
+Stores:
 
 - `transactions`
 - `settings`
@@ -78,107 +78,192 @@ Stores atuais:
 - `exchangeRates`
 - `goals`
 - `budgets`
+- `accounts`
+- `schedules`
+- `rules`
+- `reconciliations`
 
-## Assistente local
+### Índices relevantes
 
-O assistente entende, entre outras, perguntas sobre:
+Transações possuem índices por:
 
-- hoje, ontem, esta semana e meses;
-- gastos e receitas;
-- categorias e moedas;
-- comparação com período anterior;
-- taxa de poupança;
-- projeção mensal;
-- recorrências;
-- gastos fora do padrão;
-- metas;
-- orçamentos.
+- data
+- moeda
+- tipo
+- categoria
+- conta
+- status
+- transferência
+- agendamento
 
-Também pode propor criação, edição e exclusão de transações. Toda mutação exige confirmação explícita antes de alterar o IndexedDB e a última ação pode ser desfeita durante a sessão.
+Contas, agendamentos, regras e conciliações também possuem índices específicos usados pelos serviços de domínio.
 
-A memória conversacional usa `sessionStorage`, mantém somente poucas mensagens e não entra no backup financeiro.
+## Reset seguro
+
+A limpeza total do banco é uma operação de domínio atômica. Depois do reset são recriados automaticamente:
+
+- `Carteira BRL`
+- `Carteira PYG`
+- categorias padrão
+- `baseCurrency = PYG`
+- `brlToPyg = 1300`
+- cotação inicial de referência
+
+O reset pode ser executado novamente sem duplicar os defaults.
+
+## Valores e moedas
+
+`parseLooseNumber()` preserva sinal quando ele existe.
+
+- transações, transferências e agendas continuam exigindo valor positivo;
+- saldo inicial e conciliação podem usar valores assinados;
+- BRL aceita formatos como `1.234,56`;
+- PYG aceita valores inteiros com separador de milhar;
+- formato `1,234.56` pode ser interpretado com `localeHint: "en-US"`.
+
+A exportação CSV neutraliza valores iniciados por `=`, `+`, `-` ou `@` para reduzir risco de CSV Formula Injection em planilhas.
+
+## Contas e patrimônio
+
+A aplicação diferencia ativos e passivos.
+
+### Ativos
+
+- receita aumenta saldo;
+- despesa reduz saldo;
+- transferência recebida aumenta saldo;
+- transferência enviada reduz saldo.
+
+### Passivos
+
+- compra/despesa aumenta dívida;
+- pagamento reduz dívida;
+- passivos são descontados do patrimônio líquido.
+
+Transferências usam duas movimentações ligadas por `transferId` e são gravadas na mesma transação IndexedDB. Elas não entram como receita ou despesa nos relatórios.
+
+## Backup
+
+Schema atual: **6**
+
+Formato principal:
+
+```json
+{
+  "schemaVersion": 6,
+  "appVersion": "2.0.0",
+  "dbVersion": 6,
+  "exportedAt": "...",
+  "stores": {}
+}
+```
+
+O backup inclui todas as stores conhecidas. Backups legados sem contas são migrados antes da restauração e as transações são vinculadas a carteiras padrão compatíveis com a moeda.
+
+Settings importados são validados por allowlist. Atualmente os settings persistidos no IndexedDB são:
+
+- `baseCurrency`: `BRL` ou `PYG`;
+- `brlToPyg`: número finito e positivo dentro do intervalo aceito.
+
+## Assistente financeiro
+
+Fluxo:
+
+1. IndexedDB fornece dados validados.
+2. O motor financeiro calcula as métricas.
+3. O roteador de intenções interpreta a pergunta.
+4. O motor local produz resposta estruturada.
+5. A IA online é usada somente se estiver habilitada e houver consentimento.
+6. Em falha de rede/backend, o assistente volta ao modo local.
+
+Nenhuma chave de API deve ser colocada no HTML, JavaScript, IndexedDB, LocalStorage, Service Worker ou repositório.
+
+O frontend espera um backend separado em:
+
+```http
+POST /api/financial-assistant
+```
+
+GitHub Pages não executa esse backend.
 
 ## Privacidade
 
-O padrão é **Somente análise local**.
+Padrão: **Somente análise local**.
 
-Níveis disponíveis:
+Níveis do assistente:
 
 1. Somente análise local.
 2. IA online com dados agregados.
 3. IA online com detalhes selecionados.
 
-Nenhuma chave de API deve ser colocada em HTML, JavaScript do navegador, IndexedDB, LocalStorage, Service Worker ou repositório GitHub.
+A memória de conversa usa `sessionStorage` e não entra no backup financeiro.
 
-## Backend opcional da IA
+## PWA / offline
 
-GitHub Pages é hospedagem estática. Para IA generativa real é necessário um backend/função serverless separado.
+O Service Worker usa cache versionado e mantém o app shell local.
 
-O frontend espera:
+Não são armazenados em cache:
 
-```http
-POST /api/financial-assistant
-Content-Type: application/json
-```
+- `/api/*`
+- respostas da IA online
+- recursos externos privados
 
-Corpo aproximado:
+Chart.js é carregado por CDN quando disponível, mas `js/charts.js` possui fallback Canvas para os gráficos essenciais. A vendorização do Chart.js ainda é uma melhoria futura.
 
-```json
-{
-  "intent": "compare_periods",
-  "question": "Compare este mês com o mês passado",
-  "financialContext": {},
-  "conversationContext": {}
-}
-```
-
-Resposta esperada:
-
-```json
-{
-  "title": "Comparação mensal",
-  "summary": "Seus gastos diminuíram neste mês.",
-  "observations": [],
-  "suggestedActions": []
-}
-```
-
-O backend deve manter a chave em variável de ambiente, validar campos, aplicar limite de tamanho, rate limiting, timeout, CORS restrito e evitar logs com dados financeiros completos. O modelo deve apenas explicar dados previamente calculados pelo aplicativo.
+O manifest já possui `start_url`, `scope`, `display`, tema e atalhos. Ícones PWA próprios 192x192/512x512 ainda estão pendentes.
 
 ## Segurança
 
-- Validação de moedas, tipos, valores e datas.
-- Lista permitida de operações mutáveis.
-- Conteúdo financeiro tratado como dados, não instruções.
-- Detecção básica de padrões de prompt injection.
-- Renderização segura do assistente via `textContent`.
-- Service Worker não intercepta nem armazena em cache `/api/financial-assistant`.
-- IA online desativada por padrão.
-- Importações continuam sujeitas às validações do aplicativo.
+Principais proteções:
+
+- validação de stores/IDs/moedas/tipos/status/datas/valores;
+- settings por allowlist;
+- restauração multi-store atômica;
+- limite de tamanho em backup/importações;
+- DOM preferencialmente com `createElement`, `textContent`, `replaceChildren` e `addEventListener`;
+- sem `eval()`/`Function()` no motor de regras;
+- proteção contra CSV Formula Injection;
+- CSP nas páginas principais;
+- IA online sem chave no cliente;
+- `/api/*` excluído do cache PWA.
 
 ## Testes
 
-Os testes usam somente dados fictícios.
+Instale dependências de desenvolvimento:
 
-Abra com servidor local e acesse:
-
-```text
-http://localhost:8080/tests/
+```bash
+npm install
 ```
 
-Cobertura atual inclui:
+Execute:
 
-- receitas/despesas e saldo;
-- conversão BRL/PYG;
-- período vazio e mês sem receita;
-- taxa de poupança;
-- recorrências;
-- anomalias;
-- metas concluídas e vencidas;
-- interpretação de intenção/moeda;
+```bash
+npm test
+```
+
+Cobertura:
+
+```bash
+npm run test:coverage
+```
+
+A suíte utiliza somente dados fictícios e cobre, entre outros:
+
+- cálculos financeiros;
+- BRL/PYG;
 - comparação de períodos;
-- tentativa de prompt injection;
-- conteúdo HTML malicioso.
+- contas/passivos;
+- parser/importação rápida;
+- recorrências e anomalias;
+- metas/orçamentos;
+- reset do banco;
+- settings;
+- valores negativos;
+- backup;
+- XSS/prompt injection;
+- CSV Formula Injection.
+
+O CI está em `.github/workflows/tests.yml`.
 
 ## Executar localmente
 
@@ -192,14 +277,24 @@ Abra:
 http://localhost:8080
 ```
 
-## Publicação
+## GitHub Pages
 
-O front-end é compatível com GitHub Pages. A IA local funciona normalmente no Pages. A IA online só funciona se o endpoint configurado apontar para um backend separado acessível por HTTPS e com CORS configurado.
+O front-end é estático e compatível com GitHub Pages.
 
-## Limitações atuais
+Produção atual:
 
-- O roteador local usa regras linguísticas e não substitui um modelo de linguagem para perguntas muito abertas.
-- Detecção de recorrência/anomalia é heurística e explicável, não detecção de fraude.
-- A cotação usada em valores consolidados pode ser aproximada.
-- GitHub Pages não hospeda o backend da IA generativa.
-- Dados continuam locais por dispositivo até existir sincronização opcional com backend/banco remoto.
+```text
+https://jefferl05.github.io/Projeto-financas/
+```
+
+## Limitações e próximos passos
+
+- `js/app.js`, `js/gestao.js` e `js/inteligencia.js` ainda devem ser divididos gradualmente em módulos menores;
+- algumas telas ainda usam `getAll()` e podem evoluir para consultas indexadas/paginadas;
+- Chart.js ainda não está vendorizado localmente;
+- faltam ícones PWA finais;
+- faltam testes E2E completos com Playwright;
+- IA generativa exige backend separado e continua opcional;
+- não existe integração bancária/Open Finance real.
+
+Consulte também `docs/CODE_REVIEW.md` para o histórico de revisão técnica.
