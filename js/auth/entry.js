@@ -1,5 +1,5 @@
 import { getAuthProfile } from "./auth-service.js";
-import { presentAccessGate } from "./auth-ui.js";
+import { mountSecuritySettings, presentAccessGate } from "./auth-ui.js";
 import { isSessionUnlocked, lockSession, startAutoLock } from "./session.js";
 
 let released = false;
@@ -29,8 +29,11 @@ async function authenticateAndRelease() {
     document.documentElement.classList.remove("auth-pending");
     document.removeEventListener("DOMContentLoaded", interceptReady, true);
     document.dispatchEvent(new Event("DOMContentLoaded"));
-  } catch (error) {
-    console.error("Falha ao iniciar proteção local.");
+    setTimeout(() => {
+      const container = document.querySelector("#view-settings .settings-grid");
+      if (container) void mountSecuritySettings(container);
+    }, 0);
+  } catch {
     const message = document.createElement("div");
     message.className = "auth-fatal";
     message.textContent = "Não foi possível iniciar a proteção local. Recarregue a página.";
