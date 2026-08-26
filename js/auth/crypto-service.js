@@ -1,6 +1,9 @@
 const DEFAULT_ITERATIONS = 210_000;
 const SALT_BYTES = 16;
 const KEY_BITS = 256;
+const RECOVERY_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+const RECOVERY_GROUPS = 5;
+const RECOVERY_GROUP_SIZE = 4;
 
 function toBase64(bytes) {
   let binary = "";
@@ -45,6 +48,32 @@ function constantTimeEqual(a, b) {
   let diff = 0;
   for (let i = 0; i < a.length; i += 1) diff |= a[i] ^ b[i];
   return diff === 0;
+}
+
+function randomRecoveryCharacter() {
+  const limit = 256 - (256 % RECOVERY_ALPHABET.length);
+  const byte = new Uint8Array(1);
+  do crypto.getRandomValues(byte); while (byte[0] >= limit);
+  return RECOVERY_ALPHABET[byte[0] % RECOVERY_ALPHABET.length];
+}
+
+export function generateRecoveryCode() {
+  const groups = [];
+  for (let group = 0; group < RECOVERY_GROUPS; group += 1) {
+    let value = "";
+    for (let index = 0; index < RECOVERY_GROUP_SIZE; index += 1) value += randomRecoveryCharacter();
+    groups.push(value);
+  }
+  return `PF-${groups.join("-")}`;
+}
+
+export function normalizeRecoveryCode(value) {
+  return String(value ?? "")
+    .trim()
+    .toUpperCase()
+    .replace(/\s+/g, "")
+    .replace(/^PF-?/, "")
+    .replace(/-/g, "");
 }
 
 export async function createCredentialVerifier(secret, { iterations = DEFAULT_ITERATIONS } = {}) {
