@@ -22,14 +22,14 @@ export function uid(prefix = "tx") {
 /**
  * Faz parsing de números nos formatos pt-BR/es-PY/en-US.
  *
- * Por padrão o retorno nunca é negativo, preservando o comportamento esperado
- * para valores de transações. Use allowNegative somente em campos onde um valor
- * assinado é semanticamente válido, como saldo inicial e conciliação.
+ * O parser preserva o sinal por padrão. Cada domínio decide se aceita valores
+ * negativos: transações, transferências e agendas validam valores positivos;
+ * saldos iniciais, passivos e conciliação podem usar valores assinados.
  */
-export function parseLooseNumber(input, { localeHint = null, allowNegative = false } = {}) {
+export function parseLooseNumber(input, { localeHint = null, allowNegative = true } = {}) {
   const original = String(input ?? "").trim();
   const isNegative = /^\s*[^\d]*-/.test(original);
-  let raw = original.replace(/[^\d,.-]/g, "").replace(/-/g, "");
+  const raw = original.replace(/[^\d,.-]/g, "").replace(/-/g, "");
 
   if (!raw) return 0;
 
