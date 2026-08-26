@@ -126,7 +126,7 @@ function scoreSemanticIntents(q, entities, memory) {
   const scores = new Map();
   const add = (intent, score) => scores.set(intent, (scores.get(intent) || 0) + score);
 
-  if (/(?:zerar|ficar zerad|deixar.+zero|sair do negativo|sair do vermelho|cobrir saldo)/.test(q)) add("account_zero_balance", 0.75);
+  if (/(?:\bzero\b|zerar|zerad|ficar.+zero|deix\w*.+zero|sair do negativo|sair do vermelho|cobrir saldo)/.test(q)) add("account_zero_balance", 0.75);
   if (/(?:quanto falta.+zerar|quanto preciso (?:colocar|depositar)|quanto tenho que depositar)/.test(q)) add("account_zero_balance", 0.72);
   if (entities.action === "zero_balance") add("account_zero_balance", 0.22);
   if (entities.direction === "negative" && /(?:conta|carteira|saldo|guarani|real|pyg|brl)/.test(q)) add("account_zero_balance", 0.18);
