@@ -34,6 +34,20 @@ const INTENTS = new Set([
   "unknown"
 ]);
 
+const CONTINUABLE_INTENTS = new Set([
+  "spending_summary",
+  "category_spending",
+  "income_summary",
+  "balance_summary",
+  "account_balance",
+  "account_zero_balance",
+  "account_target",
+  "liabilities",
+  "upcoming_commitments",
+  "budgets",
+  "goals"
+]);
+
 function detectCurrency(q) {
   if (/(?:\bbrl\b|\breais?\b|r\$)/.test(q)) return "BRL";
   if (/(?:\bpyg\b|\bguaranis?\b|gs\.?|₲)/.test(q)) return "PYG";
@@ -126,10 +140,11 @@ function scoreSemanticIntents(q, entities, memory) {
   const scores = new Map();
   const add = (intent, score) => scores.set(intent, (scores.get(intent) || 0) + score);
 
-  if (/(?:\bzero\b|zerar|zerad|ficar.+zero|deix\w*.+zero|sair do negativo|sair do vermelho|cobrir saldo)/.test(q)) add("account_zero_balance", 0.75);
+  if (/(?:\bzero\b|zerar|zerad|ficar.+zero|deix\w*.+zero|sair do negativo|sair do vermelho|cobrir saldo|como arrum\w*)/.test(q)) add("account_zero_balance", 0.75);
   if (/(?:quanto falta.+zerar|quanto preciso (?:colocar|depositar)|quanto tenho que depositar)/.test(q)) add("account_zero_balance", 0.72);
   if (entities.action === "zero_balance") add("account_zero_balance", 0.22);
-  if (entities.direction === "negative" && /(?:conta|carteira|saldo|guarani|real|pyg|brl)/.test(q)) add("account_zero_balance", 0.18);
+  if (entities.direction === "negative" && /(?:conta|carteira|saldo|guarani|real|pyg|brl)/.test(q)) add("account_zero_balance", 0.65);
+  else if (entities.direction === "negative") add("account_zero_balance", 0.58);
 
   if (/(?:quanto tenho|qual.*saldo|saldo da|saldo na|saldo em)/.test(q)) add("account_balance", 0.72);
   if (/(?:conta|carteira)/.test(q) && entities.currency) add("account_balance", 0.14);
@@ -138,10 +153,40 @@ function scoreSemanticIntents(q, entities, memory) {
   if (/^e quanto falta/.test(q) && memory?.lastIntent === "account_balance") add("account_target", 0.16);
 
   if (/(?:quanto devo|estou devendo|divida|dívida|cartao|cartão)/.test(q)) add("liabilities", 0.82);
-  if (/(?:quanto tenho disponivel|quanto tenho disponível|dinheiro disponivel|dinheiro disponível|tenho dinheiro pra gastar)/.test(q)) add("available_funds", 0.9);
+  if (/(?:quanto tenho disponivel|quanto tenho disponível|dinheiro disponivel|dinheiro disponível|tenho dinheiro para gastar)/.test(q)) add("available_funds", 0.9);
   if (/(?:patrimonio|patrimônio|quanto tenho no total|somando tudo)/.test(q)) add("net_worth", 0.9);
+  if (/(?:para onde esta indo meu dinheiro|onde esta indo meu dinheiro)/.test(q)) add("spending_summary", 0.88);
 
   return [...scores.entries()].sort((a, b) => b[1] - a[1])[0] || [null, 0];
+}
+
+function applyConversationContinuation({ intent, confidence, q, period, currency, category, memory }) {
+  if (intent !== "unknown" || !memory?.lastIntent || !CONTINUABLE_INTENTS.has(memory.lastIntent)) {
+    return { intent, confidence, period, currency, category };
+  }
+
+  const looksLikeFollowUp = Boolean(
+    period || currency || category ||
+    /^(?:e\b|esse\b|este\b|essa\b|com\b|a de\b|da de\b|em\b|quanto preciso\b)/.test(q)
+  );
+  if (!looksLikeFollowUp) return { intent, confidence, period, currency, category };
+
+  const inheritedPeriod = period || memory.lastFilters?.period || null;
+  const inheritedCurrency = currency || memory.lastFilters?.currency || null;
+  const inheritedCategory = category || memory.lastFilters?.category || null;
+  let inheritedIntent = memory.lastIntent;
+
+  if (["spending_summary", "category_spending"].includes(memory.lastIntent) && inheritedCategory) {
+    inheritedIntent = "category_spending";
+  }
+
+  return {
+    intent: inheritedIntent,
+    confidence: 0.84,
+    period: inheritedPeriod,
+    currency: inheritedCurrency,
+    category: inheritedCategory
+  };
 }
 
 export function routeIntent(question, {
@@ -251,6 +296,13 @@ export function routeIntent(question, {
     intent = semanticIntent;
     confidence = semanticScore;
   }
+
+  const continuation = applyConversationContinuation({ intent, confidence, q, period, currency, category, memory });
+  intent = continuation.intent;
+  confidence = continuation.confidence;
+  period = continuation.period;
+  currency = continuation.currency;
+  category = continuation.category;
 
   if (intent === "compare_periods" && /este mes|mes atual/.test(q)) {
     period = resolvePeriod("this_month", now);
