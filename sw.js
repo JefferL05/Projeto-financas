@@ -1,4 +1,4 @@
-const CACHE_NAME = "projeto-financas-v10";
+const CACHE_NAME = "projeto-financas-v11";
 
 const APP_SHELL = [
   "./",
@@ -23,6 +23,7 @@ const APP_SHELL = [
   "./js/ai/account-context.js",
   "./js/ai/assistant.js",
   "./js/ai/intent-router.js",
+  "./js/ai/entity-extractor.js",
   "./js/ai/local-engine.js",
   "./js/ai/context-builder.js",
   "./js/ai/response-renderer.js",
@@ -33,6 +34,7 @@ const APP_SHELL = [
   "./js/finance/period-utils.js",
   "./js/finance/date-utils.js",
   "./js/finance/exchange.js",
+  "./js/finance/account-targets.js",
   "./js/finance/recurring-detector.js",
   "./js/finance/anomaly-detector.js",
   "./js/finance/budget-engine.js",
