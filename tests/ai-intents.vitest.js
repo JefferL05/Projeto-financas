@@ -49,6 +49,11 @@ describe("normalização financeira", () => {
     expect(entities.amount).toBe(-99);
     expect(entities.accountId).toBe("account-wallet-pyg");
   });
+
+  test("entende milhão e mil em linguagem natural", () => {
+    expect(extractFinancialEntities("quero chegar em 1 milhão", { accounts }).amount).toBe(1_000_000);
+    expect(extractFinancialEntities("estou devendo 500 mil", { accounts }).amount).toBe(500_000);
+  });
 });
 
 describe("intenção account_zero_balance", () => {
@@ -98,9 +103,10 @@ describe("respostas objetivas de conta", () => {
       rate: 1300
     });
 
-    expect(response.summary).toContain("-₲ 99");
-    expect(response.summary).toContain("₲ 99");
+    expect(response.metrics.find((item) => item.label === "Saldo atual")?.value).toBe(-99);
+    expect(response.metrics.find((item) => item.label === "Valor para zerar")?.value).toBe(99);
     expect(response.summary).toContain("zerar");
+    expect(response.summary).toContain("99");
     expect(response.clarification).toBeNull();
   });
 
@@ -142,5 +148,11 @@ describe("respostas objetivas de conta", () => {
       rate: 1300
     });
     expect(response.clarification).toContain("mais de uma conta");
+  });
+
+  test("intenção de alvo usa valor abreviado", () => {
+    const route = routeIntent("Quanto falta para chegar em 1 milhão na Carteira PYG?", { accounts });
+    expect(route.intent).toBe("account_target");
+    expect(route.entities.targetAmount).toBe(1_000_000);
   });
 });
