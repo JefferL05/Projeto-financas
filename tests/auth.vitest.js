@@ -4,8 +4,10 @@ import {
   changeCredential,
   createProtection,
   getAuthProfile,
+  hasRecoveryConfigured,
   regenerateRecoveryCode,
   resetCredentialWithRecovery,
+  resetLegacyProtection,
   updateAuthPreferences,
   verifyAccess,
   verifyRecoveryCode
@@ -16,6 +18,33 @@ import {
   normalizeRecoveryCode,
   verifyCredential
 } from "../js/auth/crypto-service.js";
+
+async function seedLegacyProfile() {
+  const verifier = await createCredentialVerifier("SenhaLegada123!");
+  const db = await new Promise((resolve, reject) => {
+    const request = indexedDB.open("ProjetoFinancasAuthDB", 1);
+    request.onupgradeneeded = () => {
+      if (!request.result.objectStoreNames.contains("auth")) request.result.createObjectStore("auth", { keyPath: "key" });
+    };
+    request.onsuccess = () => resolve(request.result);
+    request.onerror = () => reject(request.error);
+  });
+  await new Promise((resolve, reject) => {
+    const tx = db.transaction("auth", "readwrite");
+    tx.objectStore("auth").put({
+      key: "profile",
+      version: 1,
+      username: "Pessoa Legada",
+      method: "password",
+      ...verifier,
+      autoLockMinutes: 5,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    });
+    tx.oncomplete = () => resolve();
+    tx.onerror = () => reject(tx.error);
+  });
+}
 
 describe("proteção de acesso local", () => {
   it("gera salts diferentes e valida a credencial derivada", async () => {
@@ -73,5 +102,15 @@ describe("proteção de acesso local", () => {
     expect((await verifyAccess({ username: "Pessoa Teste", secret: "NovaSenhaFicticia456!" })).ok).toBe(true);
     expect((await verifyRecoveryCode({ username: "Pessoa Teste", recoveryCode: generated.recoveryCode })).ok).toBe(false);
     expect((await verifyRecoveryCode({ username: "Pessoa Teste", recoveryCode: recovered.recoveryCode })).ok).toBe(true);
+  });
+
+  it("permite redefinir somente acesso legado sem recuperação e preserva o banco financeiro", async () => {
+    await seedLegacyProfile();
+    const legacy = await getAuthProfile();
+    expect(legacy.username).toBe("Pessoa Legada");
+    expect(hasRecoveryConfigured(legacy)).toBe(false);
+    await expect(resetLegacyProtection({ username: "Pessoa Legada", confirmation: "ERRADO" })).rejects.toThrow();
+    await resetLegacyProtection({ username: "Pessoa Legada", confirmation: "REDEFINIR" });
+    expect(await getAuthProfile()).toBeNull();
   });
 });
