@@ -3,8 +3,10 @@ import {
   createProtectionWithRecovery,
   disableProtection,
   getAuthProfile,
+  hasRecoveryConfigured,
   regenerateRecoveryCode,
   resetCredentialWithRecovery,
+  resetLegacyProtection,
   updateAuthPreferences,
   verifyAccess
 } from "./auth-service.js";
@@ -201,6 +203,40 @@ function showRecoveryForm({ card, overlay, profile, resolve }) {
   recovery.focus();
 }
 
+function showLegacyResetForm({ card, overlay, profile, resolve }) {
+  card.querySelectorAll(".auth-form, .auth-link, .auth-footnote, .auth-recovery").forEach((element) => element.remove());
+  const warning = node("p", "auth-warning", "Seu acesso foi criado antes do sistema de códigos de recuperação. Você pode redefinir somente a proteção local sem apagar transações, contas, metas ou orçamentos.");
+  const detail = node("p", "auth-footnote", "Como os dados financeiros não são criptografados pela senha, esta operação remove apenas o bloqueio local antigo. Depois você criará uma nova senha e receberá um código de recuperação.");
+  const form = node("form", "auth-form");
+  const username = input("authLegacyResetUser", "text", "username");
+  username.value = profile.username;
+  const confirmation = input("authLegacyResetConfirmation", "text", "off");
+  confirmation.placeholder = "REDEFINIR";
+  const error = errorRegion();
+  const submit = node("button", "auth-submit", "Redefinir proteção local"); submit.type = "submit";
+  const cancel = node("button", "auth-link", "Voltar ao login"); cancel.type = "button";
+  form.append(field("Usuário", username), field('Digite "REDEFINIR" para confirmar', confirmation), error, submit);
+  card.append(warning, detail, form, cancel);
+  cancel.addEventListener("click", () => { overlay.remove(); loginScreen(profile).then(resolve); });
+  form.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    error.textContent = "";
+    submit.disabled = true;
+    try {
+      await resetLegacyProtection({ username: username.value, confirmation: confirmation.value });
+      lockSession();
+      overlay.remove();
+      const nextProfile = await setupScreen();
+      resolve(nextProfile);
+    } catch (err) {
+      error.textContent = err?.message || "Não foi possível redefinir o acesso legado.";
+      submit.disabled = false;
+      confirmation.focus();
+    }
+  });
+  confirmation.focus();
+}
+
 async function loginScreen(profile) {
   return new Promise((resolve) => {
     const { overlay, card } = buildShell("Bem-vindo de volta", "Seus dados financeiros permanecem armazenados neste dispositivo.");
@@ -214,7 +250,9 @@ async function loginScreen(profile) {
     form.append(field("Usuário", username), field(profile.method === "pin" ? "PIN" : "Senha", secret), error, submit);
     card.append(form);
     addShowToggle(secret, card);
-    card.append(forgot, node("p", "auth-footnote", "🔑 Esqueceu? Use o código de recuperação salvo no primeiro acesso."));
+    card.append(forgot, node("p", "auth-footnote", hasRecoveryConfigured(profile)
+      ? "🔑 Esqueceu? Use o código de recuperação salvo no primeiro acesso."
+      : "🔑 Acesso antigo sem código de recuperação detectado. É possível redefinir apenas o bloqueio local sem apagar os dados financeiros."));
 
     let failures = 0;
     form.addEventListener("submit", async (event) => {
@@ -231,7 +269,10 @@ async function loginScreen(profile) {
       } catch { error.textContent = "Não foi possível validar o acesso."; }
       finally { submit.disabled = false; }
     });
-    forgot.addEventListener("click", () => showRecoveryForm({ card, overlay, profile, resolve }));
+    forgot.addEventListener("click", () => {
+      if (hasRecoveryConfigured(profile)) showRecoveryForm({ card, overlay, profile, resolve });
+      else showLegacyResetForm({ card, overlay, profile, resolve });
+    });
     queueMicrotask(() => secret.focus());
   });
 }
@@ -253,7 +294,7 @@ export async function mountSecuritySettings(container) {
   const actions = node("div", "button-stack");
   const lock = node("button", "btn btn-secondary", "Bloquear agora"); lock.type = "button";
   const change = node("button", "btn btn-secondary", "Alterar senha/PIN"); change.type = "button";
-  const recovery = node("button", "btn btn-secondary", "Gerar novo código de recuperação"); recovery.type = "button";
+  const recovery = node("button", "btn btn-secondary", hasRecoveryConfigured(profile) ? "Gerar novo código de recuperação" : "Criar código de recuperação"); recovery.type = "button";
   const disable = node("button", "btn btn-danger", "Desativar proteção"); disable.type = "button";
   actions.append(lock, change, recovery, disable);
   card.append(status, field("Bloqueio automático", select), actions);
