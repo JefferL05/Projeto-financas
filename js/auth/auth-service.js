@@ -11,6 +11,7 @@ const AUTH_STORE = "auth";
 const PROFILE_KEY = "profile";
 const VALID_METHODS = new Set(["password", "pin"]);
 const VALID_AUTO_LOCKS = new Set([0, 1, 5, 15, 30]);
+const LEGACY_RESET_CONFIRMATION = "REDEFINIR";
 
 let authDbPromise;
 
@@ -62,6 +63,12 @@ async function writeProfile(profile) {
   return profile;
 }
 
+async function deleteProfile() {
+  const db = await openAuthDB();
+  const tx = db.transaction(AUTH_STORE, "readwrite");
+  await req(tx.objectStore(AUTH_STORE).delete(PROFILE_KEY));
+}
+
 async function buildRecoveryVerifier(recoveryCode) {
   const normalized = normalizeRecoveryCode(recoveryCode);
   const record = await createCredentialVerifier(normalized);
@@ -82,6 +89,10 @@ function recoveryRecord(profile) {
     iterations: profile.recoveryIterations,
     algorithm: profile.recoveryAlgorithm
   };
+}
+
+export function hasRecoveryConfigured(profile) {
+  return Boolean(recoveryRecord(profile));
 }
 
 export async function getAuthProfile() {
@@ -157,6 +168,22 @@ export async function resetCredentialWithRecovery({ username, recoveryCode, newS
   return { profile, recoveryCode: nextRecoveryCode };
 }
 
+export async function resetLegacyProtection({ username, confirmation }) {
+  const profile = await getAuthProfile();
+  if (!profile) return { ok: true, reason: "not-configured" };
+  if (hasRecoveryConfigured(profile)) {
+    throw new Error("Este acesso já possui código de recuperação. Use o código salvo.");
+  }
+  if (String(username ?? "").trim() !== profile.username) {
+    throw new Error("Nome de usuário não corresponde ao acesso local.");
+  }
+  if (String(confirmation ?? "").trim().toUpperCase() !== LEGACY_RESET_CONFIRMATION) {
+    throw new Error(`Digite ${LEGACY_RESET_CONFIRMATION} para confirmar.`);
+  }
+  await deleteProfile();
+  return { ok: true, reason: "legacy-access-reset" };
+}
+
 export async function regenerateRecoveryCode(currentSecret) {
   const profile = await getAuthProfile();
   if (!profile) throw new Error("Proteção não configurada.");
@@ -202,14 +229,13 @@ export async function disableProtection(secret) {
   if (!profile) return;
   const ok = await verifyCredential(String(secret ?? ""), profile);
   if (!ok) throw new Error("Credencial atual incorreta.");
-  const db = await openAuthDB();
-  const tx = db.transaction(AUTH_STORE, "readwrite");
-  await req(tx.objectStore(AUTH_STORE).delete(PROFILE_KEY));
+  await deleteProfile();
 }
 
 export const AUTH_METADATA = Object.freeze({
   dbName: AUTH_DB_NAME,
   dbVersion: AUTH_DB_VERSION,
   methods: [...VALID_METHODS],
-  autoLockOptions: [...VALID_AUTO_LOCKS]
+  autoLockOptions: [...VALID_AUTO_LOCKS],
+  legacyResetConfirmation: LEGACY_RESET_CONFIRMATION
 });
