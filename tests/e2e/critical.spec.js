@@ -94,7 +94,7 @@ test("E2E 4 — cartão aumenta dívida e pagamento reduz", async ({ page }) => 
   await page.locator("#accountType").selectOption("credit_card");
   await page.locator("#accountCurrency").selectOption("BRL");
   await page.locator("#accountOpening").fill("1000");
-  await page.locator("#createAccountBtn").click();
+  await page.locator("#accountForm button[type='submit']").click();
   await expect(page.locator("#accountsList")).toContainText("Cartão Teste");
 
   await openProtected(page, "/index.html");
@@ -161,7 +161,7 @@ test("E2E 6 — offline mantém recursos locais", async ({ page, context }) => {
 test("E2E 7 — assistente local responde consulta", async ({ page }) => {
   await openProtected(page, "/inteligencia.html#ia");
   await page.locator("#aiQuestion").fill("Quanto gastei hoje?");
-  await page.locator("#aiForm button[type='submit']").click();
+  await page.locator("#askAiBtn").click();
   await expect(page.locator("#chatLog")).toContainText(/gasto|despesa|hoje/i);
 });
 
