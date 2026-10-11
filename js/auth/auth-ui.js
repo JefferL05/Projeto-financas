@@ -7,6 +7,7 @@ import {
   regenerateRecoveryCode,
   resetCredentialWithRecovery,
   resetLegacyProtection,
+  resetProtectionWithoutRecovery,
   updateAuthPreferences,
   verifyAccess
 } from "./auth-service.js";
@@ -200,7 +201,44 @@ function showRecoveryForm({ card, overlay, profile, resolve }) {
       recovery.focus();
     }
   });
+  const emergencyReset = node("button", "auth-link", "Não tenho o código de recuperação");
+  emergencyReset.type = "button";
+  emergencyReset.addEventListener("click", () => showEmergencyResetForm({ card, overlay, profile, resolve }));
+  card.append(emergencyReset);
   recovery.focus();
+}
+
+function showEmergencyResetForm({ card, overlay, profile, resolve }) {
+  card.querySelectorAll(".auth-form, .auth-link, .auth-footnote, .auth-recovery, .auth-warning").forEach((element) => element.remove());
+  const warning = node("p", "auth-warning", "Último recurso: redefine somente o bloqueio local deste navegador. Suas contas, transações, metas e orçamentos não serão apagados. A senha não criptografa os dados financeiros; este recurso não redefine uma conta de servidor.");
+  const form = node("form", "auth-form");
+  const username = input("authEmergencyResetUser", "text", "username");
+  username.value = profile.username;
+  const confirmation = input("authEmergencyResetConfirmation", "text", "off");
+  confirmation.placeholder = "REDEFINIR";
+  const error = errorRegion();
+  const submit = node("button", "auth-submit", "Redefinir somente o bloqueio"); submit.type = "submit";
+  const cancel = node("button", "auth-link", "Voltar à recuperação"); cancel.type = "button";
+  form.append(field("Usuário", username), field('Digite "REDEFINIR" para confirmar', confirmation), error, submit);
+  card.append(warning, form, cancel);
+  cancel.addEventListener("click", () => { overlay.remove(); loginScreen(profile).then(resolve); });
+  form.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    error.textContent = "";
+    submit.disabled = true;
+    try {
+      await resetProtectionWithoutRecovery({ username: username.value, confirmation: confirmation.value });
+      lockSession();
+      overlay.remove();
+      const nextProfile = await setupScreen();
+      resolve(nextProfile);
+    } catch (err) {
+      error.textContent = err?.message || "Não foi possível redefinir o bloqueio local.";
+      submit.disabled = false;
+      confirmation.focus();
+    }
+  });
+  confirmation.focus();
 }
 
 function showLegacyResetForm({ card, overlay, profile, resolve }) {
