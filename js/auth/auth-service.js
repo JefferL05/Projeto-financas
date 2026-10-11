@@ -168,6 +168,22 @@ export async function resetCredentialWithRecovery({ username, recoveryCode, newS
   return { profile, recoveryCode: nextRecoveryCode };
 }
 
+export async function resetProtectionWithoutRecovery({ username, confirmation }) {
+  const profile = await getAuthProfile();
+  if (!profile) return { ok: true, reason: "not-configured" };
+  if (String(username ?? "").trim() !== profile.username) {
+    throw new Error("Nome de usuário não corresponde ao acesso local.");
+  }
+  if (String(confirmation ?? "").trim().toUpperCase() !== LEGACY_RESET_CONFIRMATION) {
+    throw new Error(`Digite ${LEGACY_RESET_CONFIRMATION} para confirmar.`);
+  }
+
+  // This is only a local privacy gate, not server authentication or encryption.
+  // Remove the credential profile only; never touch the financial IndexedDB.
+  await deleteProfile();
+  return { ok: true, reason: "local-protection-reset" };
+}
+
 export async function resetLegacyProtection({ username, confirmation }) {
   const profile = await getAuthProfile();
   if (!profile) return { ok: true, reason: "not-configured" };

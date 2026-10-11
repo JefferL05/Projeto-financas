@@ -171,7 +171,11 @@ function applyConversationContinuation({ intent, confidence, q, period, currency
   );
   if (!looksLikeFollowUp) return { intent, confidence, period, currency, category };
 
-  const inheritedPeriod = period || memory.lastFilters?.period || null;
+  // extractPeriodFromText may return the current month as a default even when
+  // the user only adds a category. Preserve the conversation's period unless
+  // the follow-up explicitly names a new one.
+  const hasExplicitPeriod = /\b(hoje|ontem|anteontem|esta semana|essa semana|semana passada|este mes|esse mes|mes passado|ultimos?\s+\d+\s+dias|janeiro|fevereiro|marco|abril|maio|junho|julho|agosto|setembro|outubro|novembro|dezembro|20\d{2})\b/.test(q);
+  const inheritedPeriod = hasExplicitPeriod ? period : (memory.lastFilters?.period || period || null);
   const inheritedCurrency = currency || memory.lastFilters?.currency || null;
   const inheritedCategory = category || memory.lastFilters?.category || null;
   let inheritedIntent = memory.lastIntent;

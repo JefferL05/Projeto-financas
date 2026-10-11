@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it } from "vitest";
 import "fake-indexeddb/auto";
 import {
   changeCredential,
@@ -8,6 +8,7 @@ import {
   regenerateRecoveryCode,
   resetCredentialWithRecovery,
   resetLegacyProtection,
+  resetProtectionWithoutRecovery,
   updateAuthPreferences,
   verifyAccess,
   verifyRecoveryCode
@@ -47,6 +48,12 @@ async function seedLegacyProfile() {
 }
 
 describe("proteção de acesso local", () => {
+  beforeEach(async () => {
+    const existing = await getAuthProfile();
+    if (existing) {
+      await resetProtectionWithoutRecovery({ username: existing.username, confirmation: "REDEFINIR" });
+    }
+  });
   it("gera salts diferentes e valida a credencial derivada", async () => {
     const a = await createCredentialVerifier("SenhaFicticia123!");
     const b = await createCredentialVerifier("SenhaFicticia123!");
@@ -102,6 +109,14 @@ describe("proteção de acesso local", () => {
     expect((await verifyAccess({ username: "Pessoa Teste", secret: "NovaSenhaFicticia456!" })).ok).toBe(true);
     expect((await verifyRecoveryCode({ username: "Pessoa Teste", recoveryCode: generated.recoveryCode })).ok).toBe(false);
     expect((await verifyRecoveryCode({ username: "Pessoa Teste", recoveryCode: recovered.recoveryCode })).ok).toBe(true);
+  });
+
+  it("permite recuperar o bloqueio local sem o código e valida a confirmação", async () => {
+    await createProtection({ username: "Pessoa Recuperacao", secret: "SenhaRecuperacao123!", method: "password" });
+    await expect(resetProtectionWithoutRecovery({ username: "Outra Pessoa", confirmation: "REDEFINIR" })).rejects.toThrow();
+    await expect(resetProtectionWithoutRecovery({ username: "Pessoa Recuperacao", confirmation: "ERRADO" })).rejects.toThrow();
+    await resetProtectionWithoutRecovery({ username: "Pessoa Recuperacao", confirmation: "REDEFINIR" });
+    expect(await getAuthProfile()).toBeNull();
   });
 
   it("permite redefinir somente acesso legado sem recuperação e preserva o banco financeiro", async () => {

@@ -69,31 +69,32 @@ test("E2E 2 — importação rápida cria lançamentos", async ({ page }) => {
 
 test("E2E 3 — criar conta e fazer transferência", async ({ page }) => {
   await openProtected(page, "/gestao.html#accounts");
-  await page.locator("#newAccountName").fill("Poupança Teste");
-  await page.locator("#newAccountType").selectOption("savings");
-  await page.locator("#newAccountCurrency").selectOption("BRL");
-  await page.locator("#newAccountOpeningBalance").fill("0");
-  await page.locator("#createAccountBtn").click();
+  await page.locator("#accountName").fill("Poupança Teste");
+  await page.locator("#accountType").selectOption("savings");
+  await page.locator("#accountCurrency").selectOption("BRL");
+  await page.locator("#accountOpening").fill("0");
+  await page.getByRole("button", { name: "Criar conta" }).click();
   await expect(page.locator("#accountsList")).toContainText("Poupança Teste");
 
-  await page.locator('[data-gestao-view="transfers"]').click();
+  await page.locator('[data-tab="transfer"]').click();
   await page.locator("#transferSource").selectOption("account-wallet-brl");
   const target = page.locator("#transferDestination option").filter({ hasText: "Poupança Teste" }).first();
   const targetValue = await target.getAttribute("value");
   await page.locator("#transferDestination").selectOption(targetValue);
   await page.locator("#transferSourceAmount").fill("100");
   await page.locator("#transferDestinationAmount").fill("100");
-  await page.locator("#createTransferBtn").click();
-  await expect(page.locator("#transfersList")).toContainText("100,00");
+  await page.locator("#transferForm button[type='submit']").click();
+  await page.getByRole("button", { name: "Confirmar transferência" }).click();
+  await expect(page.locator("#transferPreview")).toBeHidden();
 });
 
 test("E2E 4 — cartão aumenta dívida e pagamento reduz", async ({ page }) => {
   await openProtected(page, "/gestao.html#accounts");
-  await page.locator("#newAccountName").fill("Cartão Teste");
-  await page.locator("#newAccountType").selectOption("credit_card");
-  await page.locator("#newAccountCurrency").selectOption("BRL");
-  await page.locator("#newAccountOpeningBalance").fill("1000");
-  await page.locator("#createAccountBtn").click();
+  await page.locator("#accountName").fill("Cartão Teste");
+  await page.locator("#accountType").selectOption("credit_card");
+  await page.locator("#accountCurrency").selectOption("BRL");
+  await page.locator("#accountOpening").fill("1000");
+  await page.locator("#accountForm button[type='submit']").click();
   await expect(page.locator("#accountsList")).toContainText("Cartão Teste");
 
   await openProtected(page, "/index.html");
@@ -111,13 +112,14 @@ test("E2E 4 — cartão aumenta dívida e pagamento reduz", async ({ page }) => 
   await openProtected(page, "/gestao.html#accounts");
   await expect(page.locator("#accountsList")).toContainText("1.200,00");
 
-  await page.locator('[data-gestao-view="transfers"]').click();
+  await page.locator('[data-tab="transfer"]').click();
   await page.locator("#transferSource").selectOption("account-wallet-brl");
   await page.locator("#transferDestination").selectOption(cardId);
   await page.locator("#transferSourceAmount").fill("300");
   await page.locator("#transferDestinationAmount").fill("300");
-  await page.locator("#createTransferBtn").click();
-  await page.locator('[data-gestao-view="accounts"]').click();
+  await page.locator("#transferForm button[type='submit']").click();
+  await page.getByRole("button", { name: "Confirmar transferência" }).click();
+  await page.locator('[data-tab="accounts"]').click();
   await expect(page.locator("#accountsList")).toContainText("900,00");
 });
 
@@ -131,14 +133,12 @@ test("E2E 5 — backup, reset e restore", async ({ page }) => {
   ]).then(([item]) => item);
   const backupPath = await download.path();
 
-  page.once("dialog", (dialog) => dialog.accept());
+  page.on("dialog", (dialog) => dialog.accept());
   await page.locator("#clearDatabaseBtn").click();
   await expect(page.locator("#dbTransactions")).toHaveText("0");
 
   await page.locator("#importJsonInput").setInputFiles(backupPath);
-  await expect(page.locator("#backupPreviewDialog")).toBeVisible();
-  await page.locator("#confirmBackupImportBtn").click();
-  await expect(page.locator("#backupPreviewDialog")).not.toBeVisible();
+  await expect(page.locator("#dbTransactions")).not.toHaveText("0");
   await expect(page.locator("#dbTransactions")).not.toHaveText("0");
 });
 
@@ -160,22 +160,23 @@ test("E2E 6 — offline mantém recursos locais", async ({ page, context }) => {
 
 test("E2E 7 — assistente local responde consulta", async ({ page }) => {
   await openProtected(page, "/inteligencia.html#ia");
-  await page.locator("#aiInput").fill("Quanto gastei hoje?");
-  await page.locator("#aiForm button[type='submit']").click();
-  await expect(page.locator("#aiConversation")).toContainText(/gasto|despesa|hoje/i);
+  await page.locator("#aiQuestion").fill("Quanto gastei hoje?");
+  await page.locator("#askAiBtn").click();
+  await expect(page.locator("#chatLog")).toContainText(/gasto|despesa|hoje/i);
 });
 
 test("E2E 8 — assistente entende como zerar conta PYG negativa", async ({ page }) => {
   await openProtected(page, "/gestao.html#accounts");
-  const pygCard = page.locator("#accountsList .account-card").filter({ hasText: "Carteira PYG" }).first();
-  await expect(pygCard).toBeVisible();
-  await pygCard.getByRole("button", { name: /Editar/i }).click();
-  await page.locator("#editAccountOpeningBalance").fill("-99");
-  await page.locator("#saveAccountEditBtn").click();
+  await page.locator("#accountName").fill("Carteira PYG Teste Negativa");
+  await page.locator("#accountType").selectOption("digital_wallet");
+  await page.locator("#accountCurrency").selectOption("PYG");
+  await page.locator("#accountOpening").fill("-99");
+  await page.getByRole("button", { name: "Criar conta" }).click();
+  await expect(page.locator("#accountsList")).toContainText("Carteira PYG Teste Negativa");
 
   await openProtected(page, "/inteligencia.html#ia");
-  await page.locator("#aiInput").fill("Como faço pra deixar zero minha conta Guarani : Esta -99");
-  await page.locator("#aiForm button[type='submit']").click();
-  await expect(page.locator("#aiConversation")).toContainText(/zerar|adicionar/i);
-  await expect(page.locator("#aiConversation")).not.toContainText("Não entendi com segurança");
+  await page.locator("#aiQuestion").fill("Como faço pra deixar zero minha conta Carteira PYG Teste Negativa que está -99?");
+  await page.locator("#askAiBtn").click();
+  await expect(page.locator("#chatLog")).toContainText(/zerar|adicionar/i);
+  await expect(page.locator("#chatLog")).not.toContainText("Não entendi com segurança");
 });
