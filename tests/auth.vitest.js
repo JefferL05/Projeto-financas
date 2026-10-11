@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it } from "vitest";
 import "fake-indexeddb/auto";
 import {
   changeCredential,
@@ -48,6 +48,12 @@ async function seedLegacyProfile() {
 }
 
 describe("proteção de acesso local", () => {
+  beforeEach(async () => {
+    const existing = await getAuthProfile();
+    if (existing) {
+      await resetProtectionWithoutRecovery({ username: existing.username, confirmation: "REDEFINIR" });
+    }
+  });
   it("gera salts diferentes e valida a credencial derivada", async () => {
     const a = await createCredentialVerifier("SenhaFicticia123!");
     const b = await createCredentialVerifier("SenhaFicticia123!");
