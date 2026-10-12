@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#0b0f14">
+  <meta name="description" content="Diagnóstico financeiro local com cálculos transparentes, histórico e ações práticas.">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self'; object-src 'none'; base-uri 'self'; frame-ancestors 'none'; form-action 'self';">
+  <title>Inteligência Financeira | Projeto Finanças</title>
+  <link rel="manifest" href="manifest.json">
+  <link rel="stylesheet" href="css/styles.css">
+  <link rel="stylesheet" href="css/premium.css">
+  <link rel="stylesheet" href="css/diagnostico.css">
+  <script type="module" src="js/theme.js"></script>
+  <script type="module" src="js/diagnostico.js"></script>
+</head>
+<body>
+  <main class="diagnostic-shell">
+    <header class="diagnostic-header">
+      <div>
+        <p class="eyebrow">Projeto Finanças · Análise privada no dispositivo</p>
+        <h1>Inteligência financeira</h1>
+        <p class="muted">Regras verificáveis que explicam onde olhar, por que importa e qual ação considerar.</p>
+      </div>
+      <div class="diagnostic-actions">
+        <button class="btn btn-secondary" id="themeToggleBtn" type="button" aria-label="Ativar tema claro" aria-pressed="false">☀️ Tema claro</button>
+        <a class="btn btn-secondary" href="index.html">← Dashboard</a>
+        <a class="btn btn-secondary" href="gestao.html">🏦 Contas</a>
+        <button class="btn btn-primary" id="refreshAnalysis" type="button">Atualizar análise</button>
+      </div>
+    </header>
+    <section class="diagnostic-summary" aria-label="Resumo do diagnóstico">
+      <article class="card"><span class="muted">Despesas no mês</span><strong id="monthExpenses">—</strong><small id="expenseCount">Aguardando análise</small></article>
+      <article class="card"><span class="muted">Receitas no mês</span><strong id="monthIncome">—</strong><small>Somadas separadamente por moeda</small></article>
+      <article class="card"><span class="muted">Saldo do período</span><strong id="monthBalance">—</strong><small>Receitas menos despesas por moeda</small></article>
+    </section>
+    <section class="card diagnostic-method">
+      <h2>Como a análise funciona</h2>
+      <p>Os cálculos usam seu histórico local no IndexedDB. BRL e PYG são apresentados separadamente para evitar somas enganosas. Nenhuma movimentação é alterada e nenhuma recomendação depende de IA online.</p>
+    </section>
+    <section class="diagnostic-section">
+      <div class="section-heading"><div><h2>O que merece atenção</h2><p class="muted">Cada sinal inclui evidência, impacto e uma ação sugerida.</p></div><span id="analysisStatus" class="analysis-status" role="status">Analisando…</span></div>
+      <div id="diagnosticList" class="diagnostic-list" aria-live="polite"></div>
+    </section>
+    <section class="card diagnostic-method">
+      <h2>Próximas decisões</h2>
+      <p>Use as oportunidades como cenários, não como garantias. O sistema não cancela despesas, altera orçamentos nem executa operações automaticamente.</p>
+      <div id="decisionSummary" class="decision-summary"></div>
+    </section>
+    <footer class="diagnostic-footer"><a href="inteligencia.html#ia">Abrir assistente financeiro</a><span>Funciona offline após carregar os arquivos do app.</span></footer>
+  </main>
+</body>
+</html>

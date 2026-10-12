@@ -1,9 +1,10 @@
-const CACHE_NAME = "projeto-financas-v17";
+const CACHE_NAME = "projeto-financas-v18";
 
 const APP_SHELL = [
   "./",
   "./index.html",
   "./inteligencia.html",
+  "./diagnostico.html",
   "./gestao.html",
   "./offline.html",
   "./manifest.json",
@@ -14,6 +15,7 @@ const APP_SHELL = [
   "./css/gestao.css",
   "./css/v2.css",
   "./css/inteligencia.css",
+  "./css/diagnostico.css",
   "./css/auth.css",
   "./js/app.js",
   "./js/gestao.js",
@@ -22,6 +24,7 @@ const APP_SHELL = [
   "./js/parser.js",
   "./js/charts.js",
   "./js/inteligencia.js",
+  "./js/diagnostico.js",
   "./js/theme.js",
   "./js/auth/entry.js",
   "./js/auth/auth-ui.js",
