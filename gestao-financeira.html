@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#0b0f14">
+  <meta name="description" content="Gestão financeira pessoal inteligente, privada e local no Projeto Finanças.">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self'; object-src 'none'; base-uri 'self'; frame-ancestors 'none'; form-action 'self';">
+  <title>Gestão Financeira | Projeto Finanças</title>
+  <link rel="manifest" href="manifest.json">
+  <link rel="stylesheet" href="css/styles.css">
+  <link rel="stylesheet" href="css/premium.css">
+  <link rel="stylesheet" href="css/gestao-financeira.css">
+  <script type="module" src="js/theme.js"></script>
+  <script type="module" src="js/financial-management.js"></script>
+</head>
+<body>
+  <main class="fm-shell">
+    <header class="fm-header">
+      <div>
+        <p class="eyebrow">Projeto Finanças · análise privada no dispositivo</p>
+        <h1>Gestão Financeira</h1>
+        <p class="muted">Entenda seus padrões, teste decisões e planeje os próximos passos com os registros existentes.</p>
+      </div>
+      <div class="fm-header-actions">
+        <button class="btn btn-secondary theme-toggle" id="themeToggleBtn" type="button" aria-label="Ativar tema claro" aria-pressed="false">☀️ Tema claro</button>
+        <a class="btn btn-secondary" href="index.html">Dashboard</a>
+        <button class="btn btn-primary" id="refreshManagement" type="button">Atualizar análise</button>
+      </div>
+    </header>
+
+    <section class="fm-filters card" aria-label="Filtros da análise">
+      <div class="field"><label for="fmMonth">Mês de análise</label><input class="input" id="fmMonth" type="month" required></div>
+      <div class="field"><label for="fmCurrency">Moeda</label><select class="input" id="fmCurrency"><option value="">Todas (sem somar moedas)</option><option value="PYG">Guarani (PYG)</option><option value="BRL">Real (BRL)</option></select></div>
+      <div class="field"><label for="fmCategory">Categoria</label><select class="input" id="fmCategory"><option value="">Todas as categorias</option></select></div>
+      <div class="field"><label for="fmType">Movimentação</label><select class="input" id="fmType"><option value="">Receitas e despesas</option><option value="income">Receitas</option><option value="expense">Despesas</option></select></div>
+      <p id="fmStatus" class="fm-status" role="status" aria-live="polite">Lendo dados locais…</p>
+    </section>
+
+    <nav class="fm-tabs" aria-label="Seções da gestão financeira">
+      <button class="fm-tab active" type="button" data-fm-tab="overview" aria-current="page">Visão geral</button>
+      <button class="fm-tab" type="button" data-fm-tab="analyst">Analista de gastos</button>
+      <button class="fm-tab" type="button" data-fm-tab="decision">Analisar decisão</button>
+      <button class="fm-tab" type="button" data-fm-tab="planning">Planejamento</button>
+      <button class="fm-tab" type="button" data-fm-tab="actions">Plano de ação</button>
+    </nav>
+
+    <section class="fm-panel active" id="fm-panel-overview" aria-labelledby="fm-title-overview">
+      <div class="fm-section-title"><div><h2 id="fm-title-overview">Resumo do período</h2><p class="muted">Valores mantidos separados por moeda para evitar comparações incorretas.</p></div></div>
+      <div class="fm-kpis">
+        <article class="card fm-kpi"><span class="muted">Receitas do mês</span><strong id="fmIncome">—</strong><small id="fmIncomeNote">Por moeda</small></article>
+        <article class="card fm-kpi"><span class="muted">Despesas do mês</span><strong id="fmExpenses">—</strong><small id="fmExpenseNote">Por moeda</small></article>
+        <article class="card fm-kpi"><span class="muted">Resultado do mês</span><strong id="fmNet">—</strong><small>Receitas menos despesas</small></article>
+        <article class="card fm-kpi"><span class="muted">Renda comprometida</span><strong id="fmCommitment">—</strong><small>Despesas ÷ receitas no período</small></article>
+      </div>
+      <div class="fm-grid-two">
+        <article class="card fm-card"><h3>Gastos por categoria</h3><p class="muted">Comparação do mês atual com o mês anterior equivalente.</p><div id="fmCategoryChart" class="fm-bars" role="img" aria-label="Comparativo de gastos por categoria"></div><div id="fmCategoryEmpty" class="fm-empty hidden">Ainda não há despesas suficientes para este gráfico.</div></article>
+        <article class="card fm-card"><h3>Comparativo mensal</h3><p class="muted">Receitas e despesas do período selecionado.</p><div id="fmMonthChart" class="fm-month-chart" role="img" aria-label="Comparação mensal de receitas e despesas"></div><div id="fmMonthEmpty" class="fm-empty hidden">Registre movimentações para visualizar a comparação.</div></article>
+      </div>
+      <div class="fm-grid-two">
+        <article class="card fm-card"><h3>Orçamentos</h3><div id="fmBudgets" class="fm-list"></div></article>
+        <article class="card fm-card"><h3>Metas financeiras</h3><div id="fmGoals" class="fm-list"></div></article>
+      </div>
+      <div class="fm-grid-two">
+        <article class="card fm-card"><h3>Compromissos próximos 30 dias</h3><div id="fmDueSoon" class="fm-list"></div></article>
+        <article class="card fm-card"><h3>Projeção de despesas</h3><div id="fmProjection" class="fm-list"></div><p class="fm-method">Metodologia: média diária observada multiplicada pelos dias do mês. É uma estimativa simples, não uma garantia; não antecipa eventos futuros.</p></article>
+      </div>
+      <article class="card fm-method-card"><h3>Como interpretar os resultados</h3><p id="fmMethodology">A análise é calculada localmente a partir dos seus registros. Transferências não são contabilizadas como receitas ou despesas. BRL e PYG não são somados sem conversão explícita.</p></article>
+    </section>
+
+    <section class="fm-panel" id="fm-panel-analyst" aria-labelledby="fm-title-analyst">
+      <div class="fm-section-title"><div><h2 id="fm-title-analyst">Analista inteligente de gastos</h2><p class="muted">Alertas explicáveis, suspeitas para revisão e economia potencial sem duplicar recomendações.</p></div></div>
+      <div class="fm-summary-strip"><span id="fmAlertCount">0 alertas</span><span id="fmRecurringCount">0 padrões recorrentes</span><span id="fmDuplicateCount">0 suspeitas de duplicidade</span></div>
+      <div id="fmAlerts" class="fm-alerts"></div>
+      <h3>Possíveis recorrências</h3><div id="fmRecurring" class="fm-list"></div>
+      <h3>Oportunidades por categoria</h3><div id="fmOpportunities" class="fm-list"></div>
+    </section>
+
+    <section class="fm-panel" id="fm-panel-decision" aria-labelledby="fm-title-decision">
+      <div class="fm-section-title"><div><h2 id="fm-title-decision">Analisar decisão financeira</h2><p class="muted">Teste o impacto estimado de uma compra, parcela, serviço ou quitação. A simulação não registra transações.</p></div></div>
+      <form id="fmDecisionForm" class="card fm-form">
+        <div class="field"><label for="fmDecisionName">Decisão</label><input class="input" id="fmDecisionName" maxlength="100" placeholder="Ex.: comprar notebook" required></div>
+        <div class="fm-form-grid">
+          <div class="field"><label for="fmDecisionCurrency">Moeda</label><select class="input" id="fmDecisionCurrency"><option value="PYG">PYG</option><option value="BRL">BRL</option></select></div>
+          <div class="field"><label for="fmDecisionCost">Custo total</label><input class="input" id="fmDecisionCost" type="number" min="0" step="0.01" required></div>
+          <div class="field"><label for="fmDecisionPayment">Parcela mensal (se houver)</label><input class="input" id="fmDecisionPayment" type="number" min="0" step="0.01" value="0"></div>
+          <div class="field"><label for="fmDecisionMonths">Prazo em meses</label><input class="input" id="fmDecisionMonths" type="number" min="1" max="600" step="1" value="1"></div>
+        </div>
+        <button class="btn btn-primary" type="submit">Calcular cenários</button>
+      </form>
+      <div id="fmDecisionResult" class="fm-decision-result" aria-live="polite"><div class="fm-empty">Preencha os dados para comparar cenários. A recomendação será limitada à qualidade dos dados disponíveis.</div></div>
+    </section>
+
+    <section class="fm-panel" id="fm-panel-planning" aria-labelledby="fm-title-planning">
+      <div class="fm-section-title"><div><h2 id="fm-title-planning">Planejamento mensal</h2><p class="muted">Crie metas e orçamentos reais no banco atual; simulações ficam separadas dos lançamentos.</p></div></div>
+      <div class="fm-grid-two">
+        <form id="fmGoalForm" class="card fm-form">
+          <h3>Nova meta financeira</h3>
+          <div class="field"><label for="fmGoalName">Nome da meta</label><input class="input" id="fmGoalName" maxlength="80" required placeholder="Ex.: reserva de emergência"></div>
+          <div class="fm-form-grid">
+            <div class="field"><label for="fmGoalCurrency">Moeda</label><select class="input" id="fmGoalCurrency"><option value="PYG">PYG</option><option value="BRL">BRL</option></select></div>
+            <div class="field"><label for="fmGoalTarget">Valor alvo</label><input class="input" id="fmGoalTarget" type="number" min="0.01" step="0.01" required></div>
+            <div class="field"><label for="fmGoalCurrent">Já acumulado</label><input class="input" id="fmGoalCurrent" type="number" min="0" step="0.01" value="0"></div>
+            <div class="field"><label for="fmGoalMonthly">Aporte mensal</label><input class="input" id="fmGoalMonthly" type="number" min="0" step="0.01" value="0"></div>
+          </div>
+          <div class="field"><label for="fmGoalDate">Data-alvo</label><input class="input" id="fmGoalDate" type="date" required></div>
+          <button class="btn btn-primary" type="submit">Salvar meta</button>
+        </form>
+        <form id="fmBudgetForm" class="card fm-form">
+          <h3>Definir limite por categoria</h3>
+          <div class="field"><label for="fmBudgetCategory">Categoria</label><select class="input" id="fmBudgetCategory" required></select></div>
+          <div class="fm-form-grid">
+            <div class="field"><label for="fmBudgetCurrency">Moeda do limite</label><select class="input" id="fmBudgetCurrency"><option value="PYG">PYG</option><option value="BRL">BRL</option></select></div>
+            <div class="field"><label for="fmBudgetLimit">Limite mensal</label><input class="input" id="fmBudgetLimit" type="number" min="0.01" step="0.01" required></div>
+          </div>
+          <button class="btn btn-primary" type="submit">Salvar limite do mês</button>
+        </form>
+      </div>
+      <form id="fmScenarioForm" class="card fm-form">
+        <h3>Simulador de cenário (não altera transações)</h3>
+        <div class="fm-form-grid">
+          <div class="field"><label for="fmIncomeChange">Variação de renda mensal (%)</label><input class="input" id="fmIncomeChange" type="number" min="-100" max="300" step="1" value="0"></div>
+          <div class="field"><label for="fmExpenseReduction">Redução de despesas (%)</label><input class="input" id="fmExpenseReduction" type="number" min="0" max="100" step="1" value="0"></div>
+          <div class="field"><label for="fmMonthlySaving">Meta de economia mensal</label><input class="input" id="fmMonthlySaving" type="number" min="0" step="0.01" value="0"></div>
+          <div class="field"><label for="fmTargetSaving">Objetivo de economia</label><input class="input" id="fmTargetSaving" type="number" min="0" step="0.01" value="0"></div>
+        </div>
+        <button class="btn btn-secondary" type="submit">Simular planejamento</button>
+        <div id="fmScenarioResult" class="fm-scenario-result" aria-live="polite"></div>
+      </form>
+      <div class="fm-method-card card"><h3>Planejado versus realizado</h3><div id="fmPlannedActual" class="fm-list"></div></div>
+    </section>
+
+    <section class="fm-panel" id="fm-panel-actions" aria-labelledby="fm-title-actions">
+      <div class="fm-section-title"><div><h2 id="fm-title-actions">Plano de ação personalizado</h2><p class="muted">Atualize o estado de cada ação. As alterações são salvas no IndexedDB, sem repetir a mesma oportunidade de economia.</p></div><button class="btn btn-secondary" id="fmGenerateActions" type="button">Atualizar sugestões</button></div>
+      <div class="fm-summary-strip"><span>Imediatas</span><span>Próximos 30 dias</span><span>Horizonte de 3 a 6 meses</span></div>
+      <div id="fmActions" class="fm-actions"></div>
+    </section>
+
+    <footer class="fm-footer"><a href="diagnostico.html">Diagnóstico financeiro</a><a href="gestao.html">Contas & Planejamento</a><a href="inteligencia.html#ia">Assistente financeiro</a><span>Dados locais · nenhuma movimentação automática</span></footer>
+  </main>
+</body>
+</html>
