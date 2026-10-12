@@ -1,10 +1,12 @@
-/* Shared UI behavior: modal dismissal and a persistent informational footer. */
+/* Shared UI behavior: consistent dismissal, theme controls and informational footer. */
 (() => {
-  const closeLabels = new Set(["cancelar", "fechar"]);
-  const closeGlyphs = new Set(["×", "✕", "✖", "x", "X"]);
+  const root = document.documentElement;
+  const cancelPattern = /^cancelar(?:\\b|$)/i;
+  const closePattern = /^(?:fechar|close|dispensar)(?:\\b|$)/i;
+  const closeGlyphs = new Set(["×", "✕", "✖", "✗", "x", "X"]);
 
   function installFooter() {
-    let footer = document.querySelector("footer.diagnostic-footer, footer.app-info-footer");
+    let footer = document.querySelector("footer.app-info-footer, footer.diagnostic-footer");
     if (!footer) {
       footer = document.createElement("footer");
       footer.className = "app-info-footer";
@@ -22,28 +24,85 @@
     footer.setAttribute("role", "contentinfo");
   }
 
-  function closeAssociatedSurface(button) {
-    const dialog = button.closest("dialog");
-    if (dialog?.open) {
-      dialog.close("cancel");
+  function setTheme(theme) {
+    const light = theme === "light";
+    root.dataset.theme = light ? "light" : "dark";
+    document.querySelectorAll("#themeToggleBtn").forEach((button) => {
+      button.textContent = light ? "🌙 Tema escuro" : "☀️ Tema claro";
+      button.setAttribute("aria-label", light ? "Ativar tema escuro" : "Ativar tema claro");
+      button.setAttribute("aria-pressed", String(light));
+    });
+    const metaTheme = document.querySelector('meta[name="theme-color"]');
+    if (metaTheme) metaTheme.setAttribute("content", light ? "#f5f8fb" : "#0a1018");
+    try {
+      localStorage.setItem("pf-theme", light ? "light" : "dark");
+    } catch {
+      // The theme still changes for the current session if storage is unavailable.
+    }
+  }
+
+  function installThemeFallback() {
+    let saved = "dark";
+    try { saved = localStorage.getItem("pf-theme") || "dark"; } catch { /* ignore */ }
+    setTheme(saved);
+
+    // The dashboard has its own controller; only bind here if no controller marked the button.
+    document.querySelectorAll("#themeToggleBtn").forEach((button) => {
+      if (button.dataset.sharedThemeBound === "true") return;
+      button.dataset.sharedThemeBound = "true";
+      button.addEventListener("click", () => {
+        setTheme(root.dataset.theme === "light" ? "dark" : "light");
+      });
+    });
+  }
+
+  function hideSurface(surface) {
+    if (!surface) return false;
+    if (surface instanceof HTMLDialogElement) {
+      if (surface.open) surface.close("cancel");
       return true;
     }
+    surface.classList.remove("active", "open", "show", "visible");
+    surface.setAttribute("aria-hidden", "true");
+    surface.hidden = true;
+    return true;
+  }
 
-    const selector = button.getAttribute("data-close-target");
+  function closeAssociatedSurface(button, closeTab = false) {
+    const selector = button.getAttribute("data-close-target") || button.getAttribute("aria-controls");
     if (selector) {
-      const panel = document.querySelector(selector);
-      if (panel) {
-        panel.hidden = true;
-        panel.classList.remove("active");
-        return true;
-      }
+      const target = document.getElementById(selector.replace(/^#/, "")) || document.querySelector(selector);
+      if (target && hideSurface(target)) return true;
     }
+
+    const dialog = button.closest("dialog, [role='dialog'], [aria-modal='true'], .modal-overlay, .modal, .drawer, .sheet, [data-modal]");
+    if (dialog && hideSurface(dialog)) return true;
 
     const dismissible = button.closest("[data-dismissible-panel]");
-    if (dismissible) {
-      dismissible.hidden = true;
-      dismissible.classList.remove("active");
-      return true;
+    if (dismissible && hideSurface(dismissible)) return true;
+
+    // X/close controls inside a tab can dismiss that tab and activate the first remaining tab.
+    if (closeTab) {
+      const panel = button.closest(".intel-view, .fm-panel, .view");
+      if (panel) {
+        const nav = panel.parentElement?.querySelector("[data-tab], [data-fm-tab], [data-view]");
+        if (!nav) return false;
+        const activeSelector = panel.classList.contains("fm-panel") ? "[data-fm-tab]" :
+          panel.classList.contains("view") ? "[data-view]" : "[data-tab]";
+        const tabButtons = [...document.querySelectorAll(activeSelector)];
+        const panelPrefix = panel.id.startsWith("fm-panel-") ? "fm-panel-" :
+          panel.id.startsWith("tab-") ? "tab-" : "view-";
+        const tabName = panel.id.startsWith(panelPrefix) ? panel.id.slice(panelPrefix.length) : "";
+        const currentButton = tabButtons.find((item) =>
+          (item.dataset.tab || item.dataset.fmTab || item.dataset.view) === tabName
+        );
+        if (currentButton) currentButton.classList.remove("active");
+        panel.hidden = true;
+        panel.classList.remove("active");
+        const next = tabButtons.find((item) => item !== currentButton);
+        if (next) next.click();
+        return true;
+      }
     }
     return false;
   }
@@ -52,11 +111,14 @@
     const button = event.target.closest("button");
     if (!button) return;
 
-    const label = (button.textContent || "").trim().toLocaleLowerCase("pt-BR");
-    const ariaLabel = (button.getAttribute("aria-label") || "").trim().toLocaleLowerCase("pt-BR");
-    const isCancel = closeLabels.has(label);
-    const isCloseIcon = closeGlyphs.has((button.textContent || "").trim()) ||
-      ariaLabel === "fechar" || button.hasAttribute("data-close-modal");
+    const label = (button.textContent || "").trim();
+    const ariaLabel = (button.getAttribute("aria-label") || "").trim();
+    const title = (button.getAttribute("title") || "").trim();
+    const isCancel = cancelPattern.test(label);
+    const isCloseIcon = closeGlyphs.has(label) ||
+      closePattern.test(ariaLabel) || closePattern.test(title) ||
+      button.hasAttribute("data-close-modal") ||
+      button.hasAttribute("data-close-target");
 
     if (!isCancel && !isCloseIcon) return;
 
@@ -67,16 +129,29 @@
       return;
     }
 
-    if (button.hasAttribute("data-close-target") || button.closest("[data-dismissible-panel]")) {
+    // Keep the domain-specific action for ordinary Cancel buttons; only close
+    // non-dialog surfaces when the button explicitly targets one.
+    if (button.hasAttribute("data-close-target") || button.hasAttribute("data-close-modal") ||
+        button.closest("[data-dismissible-panel]") ||
+        button.closest("[role='dialog'], [aria-modal='true'], .modal-overlay, .modal, .drawer, .sheet, [data-modal]")) {
       event.preventDefault();
-      closeAssociatedSurface(button);
+      closeAssociatedSurface(button, isCloseIcon && !isCancel);
+      return;
     }
-    // Inline cancellation buttons keep their domain-specific handlers intact.
+
+    if (isCloseIcon) {
+      const closed = closeAssociatedSurface(button, true);
+      if (closed) event.preventDefault();
+    }
   });
 
-  if (document.readyState === "loading") {
-    document.addEventListener("DOMContentLoaded", installFooter, { once: true });
-  } else {
+  const boot = () => {
     installFooter();
+    installThemeFallback();
+  };
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", boot, { once: true });
+  } else {
+    boot();
   }
 })();
