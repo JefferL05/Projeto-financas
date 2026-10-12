@@ -118,6 +118,18 @@
           <button class="btn btn-primary" type="submit">Salvar limite do mês</button>
         </form>
       </div>
+      <form id="fmFutureExpenseForm" class="card fm-form">
+        <h3>Planejar uma despesa futura</h3>
+        <div class="field"><label for="fmFutureExpenseName">Descrição</label><input class="input" id="fmFutureExpenseName" maxlength="100" required placeholder="Ex.: seguro do veículo"></div>
+        <div class="fm-form-grid">
+          <div class="field"><label for="fmFutureExpenseCategory">Categoria</label><select class="input" id="fmFutureExpenseCategory"></select></div>
+          <div class="field"><label for="fmFutureExpenseCurrency">Moeda</label><select class="input" id="fmFutureExpenseCurrency"><option value="PYG">PYG</option><option value="BRL">BRL</option></select></div>
+          <div class="field"><label for="fmFutureExpenseAmount">Valor estimado</label><input class="input" id="fmFutureExpenseAmount" type="number" min="0.01" step="0.01" required></div>
+          <div class="field"><label for="fmFutureExpenseDate">Data prevista</label><input class="input" id="fmFutureExpenseDate" type="date" required></div>
+        </div>
+        <button class="btn btn-secondary" type="submit">Salvar despesa planejada</button>
+        <div id="fmFutureExpenses" class="fm-list"></div>
+      </form>
       <form id="fmScenarioForm" class="card fm-form">
         <h3>Simulador de cenário (não altera transações)</h3>
         <div class="fm-form-grid">
