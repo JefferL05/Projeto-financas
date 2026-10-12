@@ -126,6 +126,19 @@ export function calculateManagementSnapshot({
   }));
   const categories = categoryTotals(currentItems);
   const previousCategories = categoryTotals(previousItems);
+  const suggestedBudgets = CURRENCIES.flatMap((code) => {
+    const categoryNames = [...new Set(valid.filter((tx) => tx.type === "expense" && tx.currency === code && comparisonMonths.includes(tx.date.slice(0, 7))).map((tx) => tx.category || "Outros"))];
+    return categoryNames.map((name) => {
+      const months = comparisonMonths.map((monthKeyValue) => ({
+        month: monthKeyValue,
+        amount: valid.filter((tx) => tx.type === "expense" && tx.currency === code && tx.date.startsWith(monthKeyValue) && (tx.category || "Outros") === name).reduce((sum, tx) => sum + Number(tx.amount), 0)
+      }));
+      const activeMonths = months.filter((entry) => entry.amount > 0);
+      if (activeMonths.length < 2) return null;
+      const averageMonthly = activeMonths.reduce((sum, entry) => sum + entry.amount, 0) / activeMonths.length;
+      return { category: name, currency: code, averageMonthly, suggestedLimit: averageMonthly * 1.05, sampleMonths: activeMonths.length, methodology: "Média dos meses com gasto registrado + margem de 5%; revise se os meses forem atípicos." };
+    }).filter(Boolean);
+  }).filter((item) => (!currency || item.currency === currency) && (!category || item.category === category)).sort((a, b) => b.averageMonthly - a.averageMonthly);
   const categoryChanges = categories.map((item) => {
     const previous = previousCategories.find((other) => other.currency === item.currency && other.category === item.category);
     const priorAmount = previous ? previous.amount : 0;
@@ -221,7 +234,7 @@ export function calculateManagementSnapshot({
   return {
     month: currentMonth, currentPeriod, previousPeriod, currency: currency || "all", category: category || "all", type: type || "all",
     exchangeRate: rate, validTransactionCount: valid.length, filteredTransactionCount: visible.length,
-    currentTotals, previousTotals, averageTotals, categories, categoryChanges, budgetStatus, anomalies, recurring, duplicates,
+    currentTotals, previousTotals, averageTotals, categories, categoryChanges, suggestedBudgets, budgetStatus, anomalies, recurring, duplicates,
     projectedExpense, incomeCommitment, dueSoon, goalProgress, alerts,
     hasEnoughHistory: previousItems.length > 0,
     methodology: "BRL e PYG são calculados separadamente; transferências são excluídas de receitas/despesas. A projeção replica a média diária observada no mês e não prevê eventos futuros."
