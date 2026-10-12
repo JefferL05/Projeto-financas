@@ -1,6 +1,6 @@
 import { getAll, get, put } from "./db.js";
 import { uid, formatMoney } from "./utils.js";
-import { accountBalance, isLiquidAccount } from "./accounts/account-balance.js";
+import { accountBalance, isLiquidAccount, isLiabilityAccount } from "./accounts/account-balance.js";
 import { calculateManagementSnapshot, simulateDecision, buildActionPlan, validateActionStatus } from "./financial-management-engine.js";
 
 const $ = (selector) => document.querySelector(selector);
@@ -123,10 +123,23 @@ async function analyze() {
       ...state, month, currency, category, type, now: new Date()
     });
     const balances = { BRL: 0, PYG: 0 };
-    state.accounts.filter((account) => !account.archived && isLiquidAccount(account) && account.onBudget !== false).forEach((account) => {
-      balances[account.currency] += accountBalance(account, state.transactions);
+    const netWorth = { BRL: 0, PYG: 0 };
+    const today = todayISO();
+    const previousEnd = snapshot.previousPeriod.end;
+    state.accounts.filter((account) => !account.archived).forEach((account) => {
+      const currentTransactions = state.transactions.filter((tx) => tx.date <= today);
+      const currentBalance = accountBalance(account, currentTransactions);
+      if (isLiquidAccount(account) && account.onBudget !== false) balances[account.currency] += currentBalance;
+      if (account.includeInNetWorth !== false) netWorth[account.currency] += currentBalance * (isLiabilityAccount(account) ? -1 : 1);
+    });
+    const priorNetWorth = { BRL: 0, PYG: 0 };
+    state.accounts.filter((account) => !account.archived && account.includeInNetWorth !== false).forEach((account) => {
+      const priorBalance = accountBalance(account, state.transactions.filter((tx) => tx.date <= previousEnd));
+      priorNetWorth[account.currency] += priorBalance * (isLiabilityAccount(account) ? -1 : 1);
     });
     snapshot.balances = balances;
+    snapshot.netWorth = netWorth;
+    snapshot.priorNetWorth = priorNetWorth;
     state.snapshot = snapshot;
     renderOverview(snapshot);
     renderAnalyst(snapshot);
@@ -151,6 +164,14 @@ function renderOverview(snapshot) {
   const commitments = ["BRL", "PYG"].filter((code) => !snapshot.currency || snapshot.currency === "all" || snapshot.currency === code)
     .map((code) => snapshot.incomeCommitment[code].percent === null ? currencyLabel(code) + ": sem renda registrada" : currencyLabel(code) + " " + snapshot.incomeCommitment[code].percent.toFixed(1) + "%");
   $("#fmCommitment").textContent = commitments.join(" · ") || "—";
+  const displayCurrencies = snapshot.currency === "all" ? ["BRL", "PYG"] : [snapshot.currency];
+  $("#fmAvailable").textContent = displayCurrencies.map((code) => money(snapshot.balances?.[code] || 0, code)).join(" · ");
+  $("#fmNetWorth").textContent = displayCurrencies.map((code) => money(snapshot.netWorth?.[code] || 0, code)).join(" · ");
+  const worthChanges = displayCurrencies.map((code) => {
+    const difference = (snapshot.netWorth?.[code] || 0) - (snapshot.priorNetWorth?.[code] || 0);
+    return code + ": " + (difference >= 0 ? "+" : "−") + money(Math.abs(difference), code);
+  });
+  $("#fmNetWorthNote").textContent = "Variação estimada vs. fim do mês anterior · " + worthChanges.join(" · ");
   $("#fmIncomeNote").textContent = snapshot.hasEnoughHistory ? "Comparação disponível com o mês anterior." : "Histórico comparativo insuficiente.";
   $("#fmExpenseNote").textContent = snapshot.validTransactionCount + " transações válidas no histórico.";
   renderCategoryChart(snapshot);
@@ -200,7 +221,8 @@ function renderMonthChart(snapshot) {
     const track = document.createElement("div"); track.className = "fm-month-track";
     const fill = document.createElement("div"); fill.className = "fm-month-fill" + (item.expense ? " expense" : "");
     fill.style.width = Math.min(100, item.value / max * 100) + "%"; track.appendChild(fill);
-    addText(row, "strong", money(item.value, item.currency)); row.appendChild(track);
+    row.appendChild(track);
+    addText(row, "strong", money(item.value, item.currency));
     parent.appendChild(row);
   });
 }
@@ -290,6 +312,7 @@ function renderAnalyst(snapshot) {
 }
 
 function renderPlanning(snapshot) {
+  renderScenarioResult();
   const parent = $("#fmPlannedActual"); parent.replaceChildren();
   const budgets = snapshot.budgetStatus;
   if (!budgets.length) { empty(parent, "Cadastre limites para comparar planejado e realizado."); return; }
