@@ -126,7 +126,7 @@ test("E2E 4 — cartão aumenta dívida e pagamento reduz", async ({ page }) => 
 test("E2E 5 — backup, reset e restore", async ({ page }) => {
   await waitForApp(page);
   await createBRLTransaction(page, { amount: "30,00", description: "Backup E2E" });
-  await page.locator('[data-view="data"]').click();
+  await page.locator('.nav-link[data-view="data"]:visible').first().click();
   const download = await Promise.all([
     page.waitForEvent("download"),
     page.locator("#exportJsonBtn").click()
