@@ -1,6 +1,5 @@
-/* Shared UI behavior: consistent dismissal, theme controls and informational footer. */
+/* Shared UI behavior: consistent dismissal and a persistent informational footer. */
 (() => {
-  const root = document.documentElement;
   const cancelPattern = /^cancelar(?:\\b|$)/i;
   const closePattern = /^(?:fechar|close|dispensar)(?:\\b|$)/i;
   const closeGlyphs = new Set(["×", "✕", "✖", "✗", "x", "X"]);
@@ -24,38 +23,6 @@
     footer.setAttribute("role", "contentinfo");
   }
 
-  function setTheme(theme) {
-    const light = theme === "light";
-    root.dataset.theme = light ? "light" : "dark";
-    document.querySelectorAll("#themeToggleBtn").forEach((button) => {
-      button.textContent = light ? "🌙 Tema escuro" : "☀️ Tema claro";
-      button.setAttribute("aria-label", light ? "Ativar tema escuro" : "Ativar tema claro");
-      button.setAttribute("aria-pressed", String(light));
-    });
-    const metaTheme = document.querySelector('meta[name="theme-color"]');
-    if (metaTheme) metaTheme.setAttribute("content", light ? "#f5f8fb" : "#0a1018");
-    try {
-      localStorage.setItem("pf-theme", light ? "light" : "dark");
-    } catch {
-      // The theme still changes for the current session if storage is unavailable.
-    }
-  }
-
-  function installThemeFallback() {
-    let saved = "dark";
-    try { saved = localStorage.getItem("pf-theme") || "dark"; } catch { /* ignore */ }
-    setTheme(saved);
-
-    // The dashboard has its own controller; only bind here if no controller marked the button.
-    document.querySelectorAll("#themeToggleBtn").forEach((button) => {
-      if (button.dataset.sharedThemeBound === "true") return;
-      button.dataset.sharedThemeBound = "true";
-      button.addEventListener("click", () => {
-        setTheme(root.dataset.theme === "light" ? "dark" : "light");
-      });
-    });
-  }
-
   function hideSurface(surface) {
     if (!surface) return false;
     if (surface instanceof HTMLDialogElement) {
@@ -71,7 +38,7 @@
   function closeAssociatedSurface(button, closeTab = false) {
     const selector = button.getAttribute("data-close-target") || button.getAttribute("aria-controls");
     if (selector) {
-      const target = document.getElementById(selector.replace(/^#/, "")) || document.querySelector(selector);
+      const target = document.getElementById(selector.replace(/^#/, ""));
       if (target && hideSurface(target)) return true;
     }
 
@@ -81,12 +48,10 @@
     const dismissible = button.closest("[data-dismissible-panel]");
     if (dismissible && hideSurface(dismissible)) return true;
 
-    // X/close controls inside a tab can dismiss that tab and activate the first remaining tab.
+    // An explicit X inside a tab panel closes that panel and selects a remaining tab.
     if (closeTab) {
       const panel = button.closest(".intel-view, .fm-panel, .view");
       if (panel) {
-        const nav = panel.parentElement?.querySelector("[data-tab], [data-fm-tab], [data-view]");
-        if (!nav) return false;
         const activeSelector = panel.classList.contains("fm-panel") ? "[data-fm-tab]" :
           panel.classList.contains("view") ? "[data-view]" : "[data-tab]";
         const tabButtons = [...document.querySelectorAll(activeSelector)];
@@ -96,7 +61,9 @@
         const currentButton = tabButtons.find((item) =>
           (item.dataset.tab || item.dataset.fmTab || item.dataset.view) === tabName
         );
-        if (currentButton) currentButton.classList.remove("active");
+        if (!currentButton) return false;
+        currentButton.classList.remove("active");
+        currentButton.removeAttribute("aria-current");
         panel.hidden = true;
         panel.classList.remove("active");
         const next = tabButtons.find((item) => item !== currentButton);
@@ -129,29 +96,25 @@
       return;
     }
 
-    // Keep the domain-specific action for ordinary Cancel buttons; only close
-    // non-dialog surfaces when the button explicitly targets one.
-    if (button.hasAttribute("data-close-target") || button.hasAttribute("data-close-modal") ||
-        button.closest("[data-dismissible-panel]") ||
-        button.closest("[role='dialog'], [aria-modal='true'], .modal-overlay, .modal, .drawer, .sheet, [data-modal]")) {
+    const hasExplicitSurface = button.hasAttribute("data-close-target") ||
+      button.hasAttribute("data-close-modal") ||
+      button.closest("[data-dismissible-panel], [role='dialog'], [aria-modal='true'], .modal-overlay, .modal, .drawer, .sheet, [data-modal]");
+
+    if (hasExplicitSurface) {
       event.preventDefault();
       closeAssociatedSurface(button, isCloseIcon && !isCancel);
       return;
     }
 
-    if (isCloseIcon) {
-      const closed = closeAssociatedSurface(button, true);
-      if (closed) event.preventDefault();
+    if (isCloseIcon && closeAssociatedSurface(button, true)) {
+      event.preventDefault();
     }
+    // Ordinary Cancel buttons keep their domain-specific handlers.
   });
 
-  const boot = () => {
-    installFooter();
-    installThemeFallback();
-  };
   if (document.readyState === "loading") {
-    document.addEventListener("DOMContentLoaded", boot, { once: true });
+    document.addEventListener("DOMContentLoaded", installFooter, { once: true });
   } else {
-    boot();
+    installFooter();
   }
 })();
