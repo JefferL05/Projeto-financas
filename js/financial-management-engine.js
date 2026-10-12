@@ -153,6 +153,7 @@ export function calculateManagementSnapshot({
   categoryChanges.filter((item) => item.previousAmount > 0 && item.changePercent >= 25 && item.difference > 0).forEach((item) => {
     alerts.push({
       id: "category-growth-" + item.currency + "-" + item.category,
+      category: item.category,
       severity: item.changePercent >= 50 ? "high" : "medium",
       title: "Aumento de gastos: " + item.category,
       currency: item.currency,
@@ -162,12 +163,12 @@ export function calculateManagementSnapshot({
     });
   });
   anomalies.forEach((item) => alerts.push({
-    id: "anomaly-" + item.transactionId, severity: "medium", title: "Despesa fora do histórico: " + (item.description || item.category),
+    id: "anomaly-" + item.transactionId, category: item.category, severity: "medium", title: "Despesa fora do histórico: " + (item.description || item.category),
     currency: item.currency, impact: Math.max(0, item.amount - item.categoryMedian),
     evidence: item.criterion, action: "Confirme se foi uma despesa excepcional antes de ajustar seu orçamento."
   }));
   duplicates.forEach((item) => alerts.push({
-    id: item.id, severity: "medium", title: "Possível lançamento duplicado",
+    id: item.id, category: item.description, severity: "medium", title: "Possível lançamento duplicado",
     currency: item.currency, impact: item.amount, evidence: item.evidence, action: item.action
   }));
   budgetStatus.filter((item) => item.status !== "saudavel").forEach((item) => alerts.push({
@@ -230,7 +231,7 @@ export function buildActionPlan(snapshot) {
   const actions = [];
   const seenSavings = new Set();
   snapshot.alerts.forEach((alert) => {
-    const key = alert.currency + "|" + alert.title.replace(/^Aumento de gastos: /, "").replace(/^Despesa fora do histórico: /, "");
+    const key = alert.currency + "|" + (alert.category || alert.title.replace(/^Aumento de gastos: /, "").replace(/^Despesa fora do histórico: /, ""));
     if (seenSavings.has(key)) return;
     seenSavings.add(key);
     actions.push({
@@ -238,6 +239,17 @@ export function buildActionPlan(snapshot) {
       phase: alert.severity === "high" ? "imediata" : "30-dias", currency: alert.currency,
       potentialSaving: Math.max(0, Number(alert.impact || 0) * 0.2),
       status: "pendente", followUp: alert.action
+    });
+  });
+  snapshot.goalProgress.filter((goal) => goal.remaining > 0).forEach((goal) => {
+    const phase = goal.targetDate && goal.targetDate <= new Date(Date.now() + 180 * DAY).toISOString().slice(0, 10) ? "3-6-meses" : "longo-prazo";
+    actions.push({
+      id: "action-goal-" + String(goal.id).replace(/[^A-Za-z0-9_-]/g, "-").slice(0, 120),
+      title: "Acompanhar meta: " + goal.name,
+      rationale: "Meta com " + goal.progressPercent.toFixed(0) + "% concluídos e " + goal.remaining.toFixed(2) + " ainda necessários.",
+      priority: goal.overdue ? "alta" : "baixa", phase,
+      currency: goal.currency, potentialSaving: 0, status: "pendente",
+      followUp: goal.monthly > 0 ? "Compare o aporte mensal planejado com o valor necessário até a data-alvo." : "Defina um aporte mensal viável para acompanhar a meta."
     });
   });
   snapshot.budgetStatus.filter((item) => item.status === "saudavel").forEach((budget) => {
