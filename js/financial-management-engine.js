@@ -99,6 +99,14 @@ export function calculateManagementSnapshot({
   const currentMonth = month || (now.getFullYear() + "-" + String(now.getMonth() + 1).padStart(2, "0"));
   const currentPeriod = periodForMonth(currentMonth);
   const previousPeriod = periodForMonth(shiftMonth(currentMonth, -1));
+  const currentCalendarMonth = now.getFullYear() + "-" + String(now.getMonth() + 1).padStart(2, "0");
+  if (currentMonth === currentCalendarMonth) {
+    currentPeriod.end = isoDate(now);
+    const previousYear = Number(previousPeriod.month.slice(0, 4));
+    const previousMonthNumber = Number(previousPeriod.month.slice(5, 7));
+    const lastPreviousDay = new Date(previousYear, previousMonthNumber, 0).getDate();
+    previousPeriod.end = isoDate(new Date(previousYear, previousMonthNumber - 1, Math.min(now.getDate(), lastPreviousDay)));
+  }
   const settingMap = Object.fromEntries(settings.map((item) => [item.key, item.value]));
   const rate = Number(settingMap.brlToPyg) > 0 ? Number(settingMap.brlToPyg) : 1300;
   const valid = normalizeTransactions(transactions);
@@ -111,9 +119,12 @@ export function calculateManagementSnapshot({
   const previousItems = visible.filter((tx) => inRange(tx, previousPeriod) && tx.type !== "transfer");
   const currentTotals = sameCurrencyTotals(currentItems);
   const previousTotals = sameCurrencyTotals(previousItems);
-  const comparisonMonths = [currentMonth, shiftMonth(currentMonth, -1), shiftMonth(currentMonth, -2)];
+  const averageMonths = [currentMonth, shiftMonth(currentMonth, -1), shiftMonth(currentMonth, -2)];
+  const comparisonMonths = currentMonth === currentCalendarMonth
+    ? [shiftMonth(currentMonth, -1), shiftMonth(currentMonth, -2), shiftMonth(currentMonth, -3)]
+    : averageMonths;
   const averageTotals = Object.fromEntries(CURRENCIES.map((code) => {
-    const monthsWithRecords = comparisonMonths.map((monthKeyValue) => {
+    const monthsWithRecords = averageMonths.map((monthKeyValue) => {
       const monthItems = valid.filter((tx) => tx.currency === code && tx.date.startsWith(monthKeyValue) && tx.type !== "transfer");
       return { month: monthKeyValue, totals: sameCurrencyTotals(monthItems)[code], hasRecords: monthItems.length > 0 };
     }).filter((entry) => entry.hasRecords);
