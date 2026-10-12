@@ -31,8 +31,7 @@ import {
   restoreBackup
 } from "./data/backup-service.js";
 
-const $ = (selector) => document.querySelector(selector);
-const $$ = (selector) => [...document.querySelectorAll(selector)];
+import { $, $$ } from "./dom.js";
 
 const state = {
   transactions: [],
