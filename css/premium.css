@@ -10,8 +10,8 @@
 html { scrollbar-gutter: stable; }
 body { min-width: 320px; }
 button, input, select, textarea { font-size: max(16px, 1em); }
-.main, .standalone-main, .intel-shell { width: 100%; max-width: var(--content-width); }
-.main { margin-right: auto; }
+.main { width: auto; max-width: var(--content-width); margin-right: auto; }
+.standalone-main, .intel-shell { width: min(100%, var(--content-width)); max-width: var(--content-width); }
 .card { min-width: 0; padding: var(--space-card); border-radius: var(--radius-card); }
 .card-head { min-width: 0; }
 .card-head > div { min-width: 0; }
