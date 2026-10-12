@@ -30,6 +30,22 @@ describe("motor da Gestão Financeira", () => {
     expect(snapshot.currentTotals.PYG.net).toBe(2200000);
   });
 
+  test("limita mês corrente e comparação ao mesmo dia do mês anterior", () => {
+    const snapshot = calculateManagementSnapshot({
+      transactions: [
+        tx("prev1", "2026-09-12", "expense", 100, "Mercado"),
+        tx("prev2", "2026-09-30", "expense", 900, "Mercado"),
+        tx("curr1", "2026-10-12", "expense", 150, "Mercado"),
+        tx("curr2", "2026-10-28", "expense", 500, "Mercado")
+      ],
+      month: "2026-10", now: new Date("2026-10-12T12:00:00")
+    });
+    expect(snapshot.currentPeriod.end).toBe("2026-10-12");
+    expect(snapshot.previousPeriod.end).toBe("2026-09-12");
+    expect(snapshot.currentTotals.BRL.expense).toBe(150);
+    expect(snapshot.previousTotals.BRL.expense).toBe(100);
+  });
+
   test("compara categorias com o mês anterior equivalente", () => {
     const snapshot = calculateManagementSnapshot({
       transactions: [
