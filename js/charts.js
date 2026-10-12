@@ -68,7 +68,7 @@ function drawFallbackBars(canvas, data) {
     ctx.fillRect(x + slot * 0.15, height - 38 - incomeHeight, barWidth, incomeHeight);
     ctx.fillStyle = themeColor("--expense", "#ff7070");
     ctx.fillRect(x + slot * 0.52, height - 38 - expenseHeight, barWidth, expenseHeight);
-    ctx.fillStyle = "#8d99a6";
+    ctx.fillStyle = themeColor("--muted", "#8d99a6");
     ctx.textAlign = "center";
     ctx.fillText(String(item.label || ""), x + slot / 2, height - 16);
   });
