@@ -234,7 +234,7 @@ export function buildActionPlan(snapshot) {
     if (seenSavings.has(key)) return;
     seenSavings.add(key);
     actions.push({
-      id: "action-" + alert.id, title: alert.title, rationale: alert.evidence, priority: alert.severity === "high" ? "alta" : "media",
+      id: "action-" + alert.id.replace(/[^A-Za-z0-9_-]/g, "-").slice(0, 150), title: alert.title, rationale: alert.evidence, priority: alert.severity === "high" ? "alta" : "media",
       phase: alert.severity === "high" ? "imediata" : "30-dias", currency: alert.currency,
       potentialSaving: Math.max(0, Number(alert.impact || 0) * 0.2),
       status: "pendente", followUp: alert.action
