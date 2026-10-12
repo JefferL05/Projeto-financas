@@ -334,3 +334,23 @@ export function buildActionPlan(snapshot) {
 export function validateActionStatus(status) {
   return ["pendente", "em-andamento", "concluida", "descartada"].includes(status) ? status : "pendente";
 }
+
+export function projectMonthEndBalance({ currentBalance, incomeToDate, expensesToDate, elapsedDays, daysInMonth, plannedExpenses = 0 } = {}) {
+  const values = [currentBalance, incomeToDate, expensesToDate, elapsedDays, daysInMonth, plannedExpenses].map(Number);
+  if (values.some((value) => !Number.isFinite(value)) || values[0] < 0 || values[1] < 0 || values[2] < 0 ||
+      values[3] < 1 || values[4] < values[3] || values[4] > 31 || values[5] < 0) return null;
+  const [balance, income, expenses, elapsed, days, planned] = values;
+  const remainingDays = Math.max(0, days - elapsed);
+  const expectedIncomeRemaining = income / elapsed * remainingDays;
+  const projectedTotalExpenses = expenses / elapsed * days;
+  const expectedExpenseRemaining = Math.max(0, projectedTotalExpenses - expenses);
+  return {
+    value: balance + expectedIncomeRemaining - expectedExpenseRemaining - planned,
+    expectedIncomeRemaining,
+    expectedExpenseRemaining,
+    plannedExpenses: planned,
+    elapsedDays: elapsed,
+    daysInMonth: days,
+    approximate: true
+  };
+}
