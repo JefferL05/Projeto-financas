@@ -184,6 +184,31 @@ export function calculateManagementSnapshot({
     id: item.id, category: item.description, severity: "medium", title: "Possível lançamento duplicado",
     currency: item.currency, impact: item.amount, evidence: item.evidence, action: item.action
   }));
+  CURRENCIES.forEach((code) => {
+    const totals = currentTotals[code];
+    if (totals.income > 0) {
+      categories.filter((item) => item.currency === code && item.amount / totals.income >= 0.25).forEach((item) => {
+        alerts.push({
+          id: "income-share-" + code + "-" + item.category.replace(/[^A-Za-z0-9_-]/g, "-"),
+          category: item.category, severity: item.amount / totals.income >= 0.4 ? "high" : "medium",
+          title: "Categoria consome parcela elevada da renda: " + item.category,
+          currency: code, impact: item.amount,
+          evidence: item.category + " representa " + (item.amount / totals.income * 100).toFixed(1) + "% das receitas registradas em " + code + " no período.",
+          action: "Revise se os lançamentos são essenciais e compare alternativas; não reduza despesas essenciais sem avaliar consequências."
+        });
+      });
+    }
+    const commitment = incomeCommitment[code];
+    if (commitment.percent !== null && commitment.percent >= 90) {
+      alerts.push({
+        id: "cashflow-risk-" + code, category: "risco-fluxo-" + code, severity: "high",
+        title: "Risco de desequilíbrio financeiro em " + code, currency: code,
+        impact: Math.max(0, totals.expense - totals.income),
+        evidence: "Despesas equivalem a " + commitment.percent.toFixed(1) + "% da renda registrada neste mês.",
+        action: "Revise despesas variáveis, compromissos próximos e margem para imprevistos. O indicador não substitui a análise da sua situação completa."
+      });
+    }
+  });
   budgetStatus.filter((item) => item.status !== "saudavel").forEach((item) => alerts.push({
     id: "budget-" + item.id, severity: item.status === "excedido" ? "high" : "medium",
     title: "Orçamento " + item.status + ": " + item.category, currency: item.currency,
@@ -242,7 +267,16 @@ export function simulateDecision({ cost = 0, monthlyPayment = 0, months = 1, cur
     monthlyIncome, monthlyExpense, recurringCommitments,
     goalCount: goals.filter((goal) => goal.currency === currency).length,
     enoughData, recommendation, scenarios,
-    caveats: currentBalanceKnown ? ["Saldo imediato usa saldo informado pelo painel."] : ["Saldo atual confiável não foi disponibilizado para esta simulação."],
+    alternatives: [
+      { label: "Alternativa 10% mais barata", totalCost: totalCost * 0.9 },
+      { label: "Alternativa 20% mais barata", totalCost: totalCost * 0.8 },
+      { label: "Adiar e poupar por mês", monthlySaving: monthlyImpact, monthsToSave: monthlyImpact > 0 ? Math.ceil(totalCost / monthlyImpact) : null }
+    ],
+    caveats: [
+      ...(currentBalanceKnown ? ["Saldo imediato usa saldo líquido das contas líquidas no orçamento."] : ["Saldo atual confiável não foi disponibilizado para esta simulação."]),
+      "Despesas essenciais não são classificadas automaticamente; revise-as manualmente.",
+      "Compromissos agendados podem ter frequências diferentes e não são subtraídos da média mensal sem normalização."
+    ],
     methodology: "Cenários são sensibilidades ilustrativas, não previsões. Parcelas são tratadas como valor mensal informado; juros, impostos e custos não informados não são inferidos."
   };
 }
