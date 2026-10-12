@@ -2,16 +2,22 @@ let cashflowChart;
 let categoryChart;
 let balanceChart;
 
+function themeColor(name, fallback) {
+  return getComputedStyle(document.documentElement).getPropertyValue(name).trim() || fallback;
+}
+
 function baseOptions() {
+  const text = themeColor("--text", "#cbd5df");
+  const muted = themeColor("--muted", "#8d99a6");
   return {
     responsive: true,
     maintainAspectRatio: false,
     plugins: {
-      legend: { labels: { color: "#cbd5df" } }
+      legend: { labels: { color: text } }
     },
     scales: {
       x: {
-        ticks: { color: "#8d99a6" },
+        ticks: { color: muted },
         grid: { color: "rgba(141,153,166,.08)" }
       },
       y: {
@@ -39,7 +45,7 @@ function clearFallback(canvas) {
   if (!setup) return null;
   setup.ctx.clearRect(0, 0, setup.width, setup.height);
   setup.ctx.font = "12px system-ui";
-  setup.ctx.fillStyle = "#8d99a6";
+  setup.ctx.fillStyle = themeColor("--muted", "#8d99a6");
   return setup;
 }
 
@@ -58,11 +64,11 @@ function drawFallbackBars(canvas, data) {
     const expenseHeight = (Number(item.expense || 0) / max) * availableHeight;
     const barWidth = Math.max(6, slot * 0.28);
 
-    ctx.fillStyle = "#3fd59a";
+    ctx.fillStyle = themeColor("--income", "#3fd59a");
     ctx.fillRect(x + slot * 0.15, height - 38 - incomeHeight, barWidth, incomeHeight);
-    ctx.fillStyle = "#ff7070";
+    ctx.fillStyle = themeColor("--expense", "#ff7070");
     ctx.fillRect(x + slot * 0.52, height - 38 - expenseHeight, barWidth, expenseHeight);
-    ctx.fillStyle = "#8d99a6";
+    ctx.fillStyle = themeColor("--muted", "#8d99a6");
     ctx.textAlign = "center";
     ctx.fillText(String(item.label || ""), x + slot / 2, height - 16);
   });
@@ -96,7 +102,7 @@ function drawFallbackDoughnut(canvas, data) {
     angle += slice;
   });
 
-  ctx.fillStyle = "#cbd5df";
+  ctx.fillStyle = themeColor("--text", "#cbd5df");
   ctx.textAlign = "center";
   ctx.fillText("Modo offline", cx, cy + 4);
 }
@@ -124,7 +130,7 @@ function drawFallbackLine(canvas, data) {
     if (index === 0) ctx.moveTo(x, y);
     else ctx.lineTo(x, y);
   });
-  ctx.strokeStyle = "#7dd3fc";
+  ctx.strokeStyle = themeColor("--accent", "#7dd3fc");
   ctx.lineWidth = 2;
   ctx.stroke();
 }
@@ -173,7 +179,7 @@ export function renderCategoryChart(canvas, data) {
       maintainAspectRatio: false,
       cutout: "62%",
       plugins: {
-        legend: { position: "bottom", labels: { color: "#cbd5df", boxWidth: 10 } }
+        legend: { position: "bottom", labels: { color: themeColor("--text", "#cbd5df"), boxWidth: 10 } }
       }
     }
   });
@@ -194,7 +200,7 @@ export function renderBalanceChart(canvas, data) {
       datasets: [{
         label: "Saldo acumulado",
         data: data.map((item) => item.value),
-        borderColor: "#7dd3fc",
+        borderColor: themeColor("--accent", "#7dd3fc"),
         backgroundColor: "rgba(125,211,252,.12)",
         fill: true,
         tension: 0.32,

@@ -138,6 +138,7 @@ function bindEvents() {
 function setupTheme() {
   const root = document.documentElement;
   const button = $("#themeToggleBtn");
+  const metaTheme = document.querySelector('meta[name="theme-color"]');
   if (!button) return;
 
   // Persist only the visual preference; financial records remain in IndexedDB.
@@ -151,6 +152,7 @@ function setupTheme() {
   const applyTheme = (theme) => {
     const isLight = theme === "light";
     root.dataset.theme = isLight ? "light" : "dark";
+    if (metaTheme) metaTheme.setAttribute("content", isLight ? "#f5f8fb" : "#0a1018");
     button.textContent = isLight ? "🌙 Tema escuro" : "☀️ Tema claro";
     button.setAttribute("aria-label", isLight ? "Ativar tema escuro" : "Ativar tema claro");
     button.setAttribute("aria-pressed", String(isLight));
@@ -160,6 +162,7 @@ function setupTheme() {
   button.addEventListener("click", () => {
     const nextTheme = root.dataset.theme === "light" ? "dark" : "light";
     applyTheme(nextTheme);
+    renderAll();
     try {
       localStorage.setItem("pf-theme", nextTheme);
     } catch {
