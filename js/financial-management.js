@@ -186,6 +186,7 @@ function renderOverview(snapshot) {
   renderGoalList(snapshot);
   renderDueSoon(snapshot);
   renderProjection(snapshot);
+  renderBudgetSuggestions(snapshot);
   $("#fmMethodology").textContent = snapshot.methodology;
 }
 
@@ -255,7 +256,8 @@ function renderGoalList(snapshot) {
     addText(item, "p", money(goal.current, goal.currency) + " de " + money(goal.target, goal.currency) + " · " + goal.progressPercent.toFixed(0) + "%");
     const progress = document.createElement("div"); progress.className = "fm-progress"; const fill = document.createElement("span");
     fill.style.width = goal.progressPercent + "%"; progress.appendChild(fill); item.appendChild(progress);
-    addText(item, "small", "Restante: " + money(goal.remaining, goal.currency) + " · prazo " + goal.targetDate); parent.appendChild(item);
+    const monthsToGoal = Number(goal.monthly) > 0 ? Math.ceil(goal.remaining / Number(goal.monthly)) : null;
+    addText(item, "small", "Restante: " + money(goal.remaining, goal.currency) + " · prazo " + goal.targetDate + (monthsToGoal === null ? " · defina um aporte para estimar o prazo" : " · ritmo atual: cerca de " + monthsToGoal + " meses")); parent.appendChild(item);
   });
 }
 
@@ -275,10 +277,12 @@ function renderProjection(snapshot) {
   const currencies = snapshot.currency === "all" ? ["BRL", "PYG"] : [snapshot.currency];
   currencies.forEach((code) => {
     const projection = snapshot.projectedExpense[code];
+    const planned = state.plan.futureExpenses.filter((expense) => expense.currency === code && expense.date?.startsWith(snapshot.month)).reduce((sum, expense) => sum + Number(expense.amount || 0), 0);
     const item = document.createElement("div"); item.className = "fm-list-item";
     addText(item, "strong", code + " · estimativa " + money(projection.projected, code));
     addText(item, "p", "Realizado até agora: " + money(projection.actual, code));
-    addText(item, "small", projection.estimate ? "Projeção por média diária; " + projection.elapsedDays + " de " + projection.daysInMonth + " dias decorridos." : "Mês fechado/fora do mês atual: valor observado, sem extrapolação adicional.");
+    addText(item, "p", "Despesas futuras planejadas no mês: " + money(planned, code));
+    addText(item, "small", (projection.estimate ? "Projeção por média diária; " + projection.elapsedDays + " de " + projection.daysInMonth + " dias decorridos." : "Mês fechado/fora do mês atual: valor observado, sem extrapolação adicional.") + " A despesa planejada é mostrada separadamente e não é uma transação.");
     parent.appendChild(item);
   });
 }
@@ -314,6 +318,30 @@ function renderAnalyst(snapshot) {
     addText(item, "strong", entry.category + " · aumento de " + money(entry.difference, entry.currency));
     addText(item, "p", entry.previousAmount > 0 ? (entry.changePercent || 0).toFixed(0) + "% sobre o mês anterior." : "Categoria sem gastos no mês anterior comparável.");
     addText(item, "small", "Cenário ilustrativo de redução de 20% do aumento: " + money(entry.difference * 0.2, entry.currency) + "/mês e " + money(entry.difference * 2.4, entry.currency) + "/ano. Não é economia garantida."); opportunities.appendChild(item);
+  });
+}
+
+function renderBudgetSuggestions(snapshot) {
+  const parent = $("#fmBudgetSuggestions");
+  parent.replaceChildren();
+  if (!snapshot.suggestedBudgets.length) {
+    empty(parent, "Histórico insuficiente: são necessários gastos em pelo menos dois meses para sugerir um limite.");
+    return;
+  }
+  snapshot.suggestedBudgets.slice(0, 8).forEach((suggestion) => {
+    const item = document.createElement("div"); item.className = "fm-list-item";
+    addText(item, "strong", suggestion.category + " · " + suggestion.currency);
+    addText(item, "p", "Média mensal " + money(suggestion.averageMonthly, suggestion.currency) + " · limite sugerido " + money(suggestion.suggestedLimit, suggestion.currency));
+    addText(item, "small", suggestion.methodology);
+    const button = document.createElement("button"); button.type = "button"; button.className = "btn btn-secondary"; button.textContent = "Preparar limite";
+    button.addEventListener("click", () => {
+      $("#fmBudgetCategory").value = suggestion.category;
+      $("#fmBudgetCurrency").value = suggestion.currency;
+      $("#fmBudgetLimit").value = suggestion.suggestedLimit.toFixed(2);
+      $(".fm-tab").find((tab) => tab.dataset.fmTab === "planning")?.click();
+      $("#fmBudgetLimit").focus();
+    });
+    item.appendChild(button); parent.appendChild(item);
   });
 }
 
