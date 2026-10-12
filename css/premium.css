@@ -160,3 +160,31 @@ html[data-theme="light"] .response-metric { background: #f0f5f8; }
 @media (max-width: 359px) {
   .bottom-nav .nav-link { font-size: .62rem; }
 }
+
+
+/* Mantém a navegação inferior presa ao viewport ao trocar de seção ou rolar a página. */
+@media (max-width: 1049px) {
+  .bottom-nav {
+    position: fixed !important;
+    inset: auto 0 0 0 !important;
+    z-index: 9999;
+    display: grid !important;
+    visibility: visible;
+    opacity: 1;
+    transform: none;
+    pointer-events: auto;
+    padding-bottom: calc(6px + env(safe-area-inset-bottom, 0px));
+  }
+
+  body {
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+
+  .main {
+    padding-bottom: calc(84px + env(safe-area-inset-bottom, 0px));
+  }
+}
+
+@media (min-width: 1050px) {
+  .bottom-nav { display: none !important; }
+}
