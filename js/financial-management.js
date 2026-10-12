@@ -177,7 +177,9 @@ function renderOverview(snapshot) {
     const difference = (snapshot.netWorth?.[code] || 0) - (snapshot.priorNetWorth?.[code] || 0);
     return code + ": " + (difference >= 0 ? "+" : "−") + money(Math.abs(difference), code);
   });
-  $("#fmNetWorthNote").textContent = "Variação estimada vs. fim do mês anterior · " + worthChanges.join(" · ");
+  const comparableDate = snapshot.currentPeriod.end === new Date(Number(snapshot.month.slice(0, 4)), Number(snapshot.month.slice(5, 7)), 0).toISOString().slice(0, 10)
+    ? "vs. mês anterior" : "vs. mesmo dia do mês anterior";
+  $("#fmNetWorthNote").textContent = "Variação estimada " + comparableDate + " · " + worthChanges.join(" · ");
   $("#fmIncomeNote").textContent = snapshot.hasEnoughHistory ? "Comparação disponível com o mês anterior." : "Histórico comparativo insuficiente.";
   $("#fmExpenseNote").textContent = snapshot.validTransactionCount + " transações válidas no histórico.";
   renderCategoryChart(snapshot);
