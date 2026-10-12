@@ -18,7 +18,7 @@ import { goalProjection } from "./finance/projections.js";
 import { createTransfer, deleteTransfer } from "./accounts/transfers.js";
 import { markSchedulePaid } from "./transactions/schedules.js";
 
-import { $, $ } from "./dom.js";
+import { $, $$ } from "./dom.js";
 
 const state = {
   transactions: [],
