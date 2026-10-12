@@ -3,7 +3,7 @@ import { formatMoney } from "./utils.js";
 import { detectAnomalies } from "./finance/anomaly-detector.js";
 import { detectRecurring } from "./finance/recurring-detector.js";
 import { evaluateBudgets } from "./finance/budget-engine.js";
-import { $, } from "./dom.js";
+import { $ } from "./dom.js";
 
 const currencies = ["BRL", "PYG"];
 const currencyLabels = { BRL: "R$", PYG: "Gs." };
@@ -123,7 +123,7 @@ function buildSignals({ valid, current, previous, budgets, rates, rate, currentM
   }
 
   const anomalyResults = detectAnomalies(expenses).filter((item) => item.amount > 0 && item.transactionId);
-  for (const anomaly of anomalyResults.slice(-20)) {
+  for (const anomaly of anomalyResults.slice(0, 20)) {
     const tx = currentExpenses.find((item) => item.id === anomaly.transactionId);
     if (!tx) continue;
     signals.push({
