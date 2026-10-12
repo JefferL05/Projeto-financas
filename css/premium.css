@@ -119,3 +119,44 @@ html[data-theme="light"] .response-metric { background: #f0f5f8; }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { scroll-behavior: auto !important; transition-duration: .01ms !important; animation-duration: .01ms !important; }
 }
+
+
+/* ===== Ajustes de responsividade mobile ===== */
+.nowrap { white-space: nowrap; }
+.bottom-nav { display: none; }
+
+@media (max-width: 1049px) {
+  .main { padding-bottom: calc(84px + env(safe-area-inset-bottom, 0px)); }
+  .bottom-nav {
+    position: fixed; inset: auto 0 0 0; z-index: 20;
+    display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 2px;
+    padding: 6px 6px calc(6px + env(safe-area-inset-bottom, 0px));
+    background: rgba(12, 19, 28, .96); backdrop-filter: blur(14px);
+    border-top: 1px solid var(--border);
+  }
+  .bottom-nav .nav-link {
+    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px;
+    min-height: 52px; padding: 6px 2px; text-align: center; font-size: .68rem; line-height: 1.1;
+    border-radius: 12px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+  .bottom-nav .nav-link span { font-size: 1.15rem; line-height: 1; }
+  .bottom-nav .nav-link.active { color: var(--accent); }
+  html[data-theme="light"] .bottom-nav { background: rgba(255, 255, 255, .96); }
+  .toast { bottom: calc(80px + env(safe-area-inset-bottom, 0px)); }
+}
+
+@media (max-width: 719px) {
+  /* Corrige a largura dos botões: antes o topbar usava align-items:flex-start */
+  .topbar { align-items: stretch; }
+  .topbar > div, .topbar-actions { width: 100%; max-width: 100%; }
+  .eyebrow { font-size: .68rem; letter-spacing: .05em; line-height: 1.35; }
+  .topbar-actions .btn { min-height: 40px; padding: 8px 10px; font-size: .88rem; }
+  .topbar-actions .btn-primary { min-height: 46px; }
+  /* Alinha os valores dos cards quando o rótulo quebra em 2 linhas */
+  .metric-card > span { min-height: 2.8em; }
+  .metric-card > strong { margin-top: 2px; }
+}
+
+@media (max-width: 359px) {
+  .bottom-nav .nav-link { font-size: .62rem; }
+}
