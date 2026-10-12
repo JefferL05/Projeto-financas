@@ -8,7 +8,7 @@ import { buildICS, createSchedule, listUpcomingSchedules, markSchedulePaid, post
 import { buildReport, safeToSpend } from "./reports/report-engine.js";
 import { resolvePeriod } from "./finance/period-utils.js";
 
-import { $, $ } from "./dom.js";
+import { $, $$ } from "./dom.js";
 
 const state = {
   accounts: [],
