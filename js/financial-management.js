@@ -45,6 +45,7 @@ function bindEvents() {
   $("#fmDecisionForm").addEventListener("submit", runDecision);
   $("#fmGoalForm").addEventListener("submit", saveGoal);
   $("#fmBudgetForm").addEventListener("submit", saveBudget);
+  $("#fmFutureExpenseForm").addEventListener("submit", saveFutureExpense);
   $("#fmScenarioForm").addEventListener("submit", saveScenario);
   $("#fmGenerateActions").addEventListener("click", regenerateActions);
 }
@@ -87,12 +88,14 @@ function populateCategories() {
   state.transactions.forEach((tx) => { if (tx.category) names.push(tx.category); });
   state.budgets.forEach((budget) => { if (budget.category) names.push(budget.category); });
   const unique = [...new Set(names)].sort((a, b) => a.localeCompare(b, "pt-BR"));
-  ["#fmCategory", "#fmBudgetCategory"].forEach((selector) => {
+  ["#fmCategory", "#fmBudgetCategory", "#fmFutureExpenseCategory"].forEach((selector) => {
     const select = $(selector);
     const old = select.value;
     select.replaceChildren();
     if (selector === "#fmCategory") {
       const all = document.createElement("option"); all.value = ""; all.textContent = "Todas as categorias"; select.appendChild(all);
+    } else if (selector === "#fmFutureExpenseCategory") {
+      const other = document.createElement("option"); other.value = "Outros"; other.textContent = "Outros"; select.appendChild(other);
     }
     unique.forEach((name) => { const option = document.createElement("option"); option.value = name; option.textContent = name; select.appendChild(option); });
     if (unique.includes(old)) select.value = old;
@@ -313,6 +316,7 @@ function renderAnalyst(snapshot) {
 
 function renderPlanning(snapshot) {
   renderScenarioResult();
+  renderFutureExpenses();
   const parent = $("#fmPlannedActual"); parent.replaceChildren();
   const budgets = snapshot.budgetStatus;
   if (!budgets.length) { empty(parent, "Cadastre limites para comparar planejado e realizado."); return; }
@@ -387,6 +391,56 @@ async function saveBudget(event) {
     event.target.reset(); await reloadData(); await analyze();
     $("#fmStatus").textContent = "Limite do orçamento salvo no IndexedDB para " + period + ".";
   } catch (error) { $("#fmStatus").textContent = error.message || "Não foi possível salvar o limite."; }
+}
+
+async function saveFutureExpense(event) {
+  event.preventDefault();
+  const name = $("#fmFutureExpenseName").value.trim();
+  const amount = Number($("#fmFutureExpenseAmount").value);
+  const currency = $("#fmFutureExpenseCurrency").value;
+  const date = $("#fmFutureExpenseDate").value;
+  const category = $("#fmFutureExpenseCategory").value || "Outros";
+  if (!name || !(amount > 0) || !date) {
+    $("#fmStatus").textContent = "Informe descrição, valor positivo e data prevista.";
+    return;
+  }
+  state.plan.futureExpenses = [...state.plan.futureExpenses, {
+    id: uid("planned-expense"), name, amount, currency, date, category, status: "planejada",
+    createdAt: new Date().toISOString()
+  }].slice(-100);
+  await savePlan();
+  event.target.reset();
+  await analyze();
+  $("#fmStatus").textContent = "Despesa planejada salva localmente. Nenhuma transação foi criada.";
+}
+
+function renderFutureExpenses() {
+  const parent = $("#fmFutureExpenses");
+  if (!parent) return;
+  parent.replaceChildren();
+  const items = [...state.plan.futureExpenses].sort((a, b) => String(a.date).localeCompare(String(b.date)));
+  if (!items.length) {
+    empty(parent, "Nenhuma despesa futura planejada.");
+    return;
+  }
+  items.forEach((expense) => {
+    const row = document.createElement("div");
+    row.className = "fm-list-item";
+    addText(row, "strong", expense.name);
+    addText(row, "p", expense.date + " · " + money(expense.amount, expense.currency) + " · " + expense.category);
+    const remove = document.createElement("button");
+    remove.type = "button";
+    remove.className = "btn btn-secondary";
+    remove.textContent = "Remover do planejamento";
+    remove.addEventListener("click", async () => {
+      state.plan.futureExpenses = state.plan.futureExpenses.filter((item) => item.id !== expense.id);
+      await savePlan();
+      renderFutureExpenses();
+      $("#fmStatus").textContent = "Item removido apenas do planejamento; os lançamentos reais permanecem intactos.";
+    });
+    row.appendChild(remove);
+    parent.appendChild(row);
+  });
 }
 
 async function saveScenario(event) {
