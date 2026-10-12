@@ -127,12 +127,14 @@ async function analyze() {
     });
     const balances = { BRL: 0, PYG: 0 };
     const netWorth = { BRL: 0, PYG: 0 };
+    const reserveBalances = { BRL: 0, PYG: 0 };
     const today = todayISO();
     const previousEnd = snapshot.previousPeriod.end;
     state.accounts.filter((account) => !account.archived).forEach((account) => {
       const currentTransactions = state.transactions.filter((tx) => tx.date <= today);
       const currentBalance = accountBalance(account, currentTransactions);
       if (isLiquidAccount(account) && account.onBudget !== false) balances[account.currency] += currentBalance;
+      if (account.type === "savings") reserveBalances[account.currency] += Math.max(0, currentBalance);
       if (account.includeInNetWorth !== false) netWorth[account.currency] += currentBalance * (isLiabilityAccount(account) ? -1 : 1);
     });
     const priorNetWorth = { BRL: 0, PYG: 0 };
@@ -141,6 +143,7 @@ async function analyze() {
       priorNetWorth[account.currency] += priorBalance * (isLiabilityAccount(account) ? -1 : 1);
     });
     snapshot.balances = balances;
+    snapshot.reserveBalances = reserveBalances;
     snapshot.netWorth = netWorth;
     snapshot.priorNetWorth = priorNetWorth;
     state.snapshot = snapshot;
@@ -151,7 +154,7 @@ async function analyze() {
     $("#fmStatus").textContent = "Análise concluída · " + snapshot.filteredTransactionCount + " registros considerados nos filtros. Valores e estimativas identificados separadamente.";
   } catch (error) {
     $("#fmStatus").textContent = "Falha na análise. Recarregue a página; os lançamentos não foram alterados.";
-    console.error("Falha ao calcular gestão financeira.", error?.message || "erro");
+    // Evita registrar detalhes potencialmente sensíveis no console.
   }
 }
 
@@ -343,6 +346,9 @@ function runDecision(event) {
     addText(card, "h3", "Análise: " + name);
     addText(card, "p", "Custo total informado: " + money(result.totalCost, currency) + " · impacto mensal estimado: " + money(result.monthlyImpact, currency));
     addText(card, "p", "Fluxo mensal de referência: " + money(result.baselineMonthlyFlow, currency) + " · após decisão: " + money(result.postDecisionFlow, currency));
+    addText(card, "p", "Média usada: " + (result.averageMonthsUsed ? result.averageMonthsUsed + " meses com registros" : "período selecionado; histórico insuficiente para média robusta"));
+    addText(card, "p", "Reserva registrada em contas do tipo poupança: " + money(result.reserveBalance, currency));
+    addText(card, "p", "Compromissos ativos listados (não normalizados por frequência): " + money(result.recurringCommitments, currency));
     addText(card, "p", result.recommendation, "fm-tag");
     result.caveats.forEach((item) => addText(card, "p", item, "fm-method"));
     addText(card, "p", result.methodology, "fm-method");
