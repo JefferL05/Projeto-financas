@@ -105,3 +105,16 @@ test("projeta saldo final somente quando as premissas são válidas e separa des
   expect(result.approximate).toBe(true);
   expect(projectMonthEndBalance({ currentBalance: 1000, incomeToDate: 0, expensesToDate: 0, elapsedDays: 0, daysInMonth: 30 })).toBeNull();
 });
+
+test("sugere limites por categoria somente com histórico em dois ou mais meses", () => {
+  const snapshot = calculateManagementSnapshot({
+    transactions: [
+      tx("sep1", "2026-09-03", "expense", 100, "Mercado"),
+      tx("oct1", "2026-10-03", "expense", 200, "Mercado")
+    ],
+    month: "2026-10", now: new Date("2026-10-12T12:00:00")
+  });
+  expect(snapshot.suggestedBudgets).toHaveLength(1);
+  expect(snapshot.suggestedBudgets[0].averageMonthly).toBe(150);
+  expect(snapshot.suggestedBudgets[0].suggestedLimit).toBeCloseTo(157.5);
+});
