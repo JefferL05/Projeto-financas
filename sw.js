@@ -1,4 +1,4 @@
-const CACHE_NAME = "projeto-financas-v18";
+const CACHE_NAME = "projeto-financas-v19";
 
 const APP_SHELL = [
   "./",
@@ -41,6 +41,7 @@ const APP_SHELL = [
   "./js/ai/privacy.js",
   "./js/ai/validators.js",
   "./js/ai/online-provider.js",
+  "./js/ai/financial-knowledge.js",
   "./js/finance/analytics-engine.js",
   "./js/finance/period-utils.js",
   "./js/finance/date-utils.js",
