@@ -1,7 +1,7 @@
 import { getAll, get, put } from "./db.js";
 import { uid, formatMoney } from "./utils.js";
 import { accountBalance, isLiquidAccount, isLiabilityAccount } from "./accounts/account-balance.js";
-import { calculateManagementSnapshot, simulateDecision, buildActionPlan, validateActionStatus } from "./financial-management-engine.js";
+import { calculateManagementSnapshot, simulateDecision, buildActionPlan, validateActionStatus, projectMonthEndBalance } from "./financial-management-engine.js";
 
 const $ = (selector) => document.querySelector(selector);
 const $$ = (selector) => [...document.querySelectorAll(selector)];
@@ -193,7 +193,7 @@ function renderOverview(snapshot) {
 function renderCategoryChart(snapshot) {
   const parent = $("#fmCategoryChart");
   parent.replaceChildren();
-  const items = snapshot.categoryChanges.slice(0, 7);
+  const items = snapshot.categoryChanges.filter((item) => item.amount > 0 || item.previousAmount > 0).slice(0, 7);
   $("#fmCategoryEmpty").classList.toggle("hidden", items.length > 0);
   if (!items.length) return;
   const max = Math.max(1, ...items.map((item) => Math.max(item.amount, item.previousAmount)));
@@ -202,10 +202,13 @@ function renderCategoryChart(snapshot) {
     const heading = document.createElement("div"); heading.className = "fm-bar-heading";
     addText(heading, "span", item.category + " · " + item.currency);
     addText(heading, "strong", money(item.amount, item.currency));
-    const track = document.createElement("div"); track.className = "fm-bar-track";
+    const previousTrack = document.createElement("div"); previousTrack.className = "fm-bar-track";
     const previous = document.createElement("span"); previous.className = "fm-bar-previous"; previous.style.width = Math.min(100, item.previousAmount / max * 100) + "%"; previous.setAttribute("aria-label", "Mês anterior");
+    previousTrack.appendChild(previous);
+    const currentTrack = document.createElement("div"); currentTrack.className = "fm-bar-track";
     const current = document.createElement("span"); current.className = "fm-bar-current"; current.style.width = Math.min(100, item.amount / max * 100) + "%"; current.setAttribute("aria-label", "Mês atual");
-    track.append(previous, current); row.append(heading, track); parent.appendChild(row);
+    currentTrack.appendChild(current);
+    row.append(heading, previousTrack, currentTrack); parent.appendChild(row);
   });
   const legend = document.createElement("div"); legend.className = "fm-legend";
   addText(legend, "span", "Mês atual"); addText(legend, "span", "Mês anterior"); parent.appendChild(legend);
@@ -220,8 +223,10 @@ function renderMonthChart(snapshot) {
     { label: code + " · receita anterior", value: snapshot.previousTotals[code].income, currency: code, expense: false, previous: true },
     { label: code + " · despesa anterior", value: snapshot.previousTotals[code].expense, currency: code, expense: true, previous: true }
   ]);
+  const hasValues = values.some((item) => item.value > 0);
+  $("#fmMonthEmpty").classList.toggle("hidden", hasValues);
+  if (!hasValues) return;
   const max = Math.max(1, ...values.map((item) => item.value));
-  $("#fmMonthEmpty").classList.toggle("hidden", values.some((item) => item.value > 0));
   values.forEach((item) => {
     const row = document.createElement("div"); row.className = "fm-month-row";
     addText(row, "span", item.label);
@@ -279,9 +284,22 @@ function renderProjection(snapshot) {
     const projection = snapshot.projectedExpense[code];
     const planned = state.plan.futureExpenses.filter((expense) => expense.currency === code && expense.date?.startsWith(snapshot.month)).reduce((sum, expense) => sum + Number(expense.amount || 0), 0);
     const item = document.createElement("div"); item.className = "fm-list-item";
-    addText(item, "strong", code + " · estimativa " + money(projection.projected, code));
+    addText(item, "strong", code + " · estimativa de despesas " + money(projection.projected, code));
     addText(item, "p", "Realizado até agora: " + money(projection.actual, code));
     addText(item, "p", "Despesas futuras planejadas no mês: " + money(planned, code));
+    if (projection.estimate && snapshot.category === "all" && snapshot.type === "all" && Number.isFinite(snapshot.balances?.[code])) {
+      const monthEnd = projectMonthEndBalance({
+        currentBalance: snapshot.balances[code],
+        incomeToDate: snapshot.currentTotals[code].income,
+        expensesToDate: projection.actual,
+        elapsedDays: projection.elapsedDays,
+        daysInMonth: projection.daysInMonth,
+        plannedExpenses: planned
+      });
+      if (monthEnd) addText(item, "p", "Saldo projetado no fim do mês: " + money(monthEnd.value, code));
+    } else {
+      addText(item, "p", "Saldo projetado indisponível com estes filtros ou sem dados suficientes.");
+    }
     addText(item, "small", (projection.estimate ? "Projeção por média diária; " + projection.elapsedDays + " de " + projection.daysInMonth + " dias decorridos." : "Mês fechado/fora do mês atual: valor observado, sem extrapolação adicional.") + " A despesa planejada é mostrada separadamente e não é uma transação.");
     parent.appendChild(item);
   });
