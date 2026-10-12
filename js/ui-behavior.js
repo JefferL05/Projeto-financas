@@ -1,10 +1,11 @@
-/* Shared UI behavior: modal dismissal and a persistent informational footer. */
+/* Shared UI behavior: consistent dismissal and a persistent informational footer. */
 (() => {
-  const closeLabels = new Set(["cancelar", "fechar"]);
-  const closeGlyphs = new Set(["×", "✕", "✖", "x", "X"]);
+  const cancelPattern = /^cancelar(?:\b|$)/i;
+  const closePattern = /^(?:fechar|close|dispensar)(?:\b|$)/i;
+  const closeGlyphs = new Set(["×", "✕", "✖", "✗", "x", "X"]);
 
   function installFooter() {
-    let footer = document.querySelector("footer.diagnostic-footer, footer.app-info-footer");
+    let footer = document.querySelector("footer.app-info-footer, footer.diagnostic-footer");
     if (!footer) {
       footer = document.createElement("footer");
       footer.className = "app-info-footer";
@@ -22,28 +23,53 @@
     footer.setAttribute("role", "contentinfo");
   }
 
-  function closeAssociatedSurface(button) {
-    const dialog = button.closest("dialog");
-    if (dialog?.open) {
-      dialog.close("cancel");
+  function hideSurface(surface) {
+    if (!surface) return false;
+    if (surface instanceof HTMLDialogElement) {
+      if (surface.open) surface.close("cancel");
       return true;
     }
+    surface.classList.remove("active", "open", "show", "visible");
+    surface.setAttribute("aria-hidden", "true");
+    surface.hidden = true;
+    return true;
+  }
 
-    const selector = button.getAttribute("data-close-target");
+  function closeAssociatedSurface(button, closeTab = false) {
+    const selector = button.getAttribute("data-close-target") || button.getAttribute("aria-controls");
     if (selector) {
-      const panel = document.querySelector(selector);
-      if (panel) {
-        panel.hidden = true;
-        panel.classList.remove("active");
-        return true;
-      }
+      const target = document.getElementById(selector.replace(/^#/, ""));
+      if (target && hideSurface(target)) return true;
     }
+
+    const dialog = button.closest("dialog, [role='dialog'], [aria-modal='true'], .modal-overlay, .modal, .drawer, .sheet, [data-modal]");
+    if (dialog && hideSurface(dialog)) return true;
 
     const dismissible = button.closest("[data-dismissible-panel]");
-    if (dismissible) {
-      dismissible.hidden = true;
-      dismissible.classList.remove("active");
-      return true;
+    if (dismissible && hideSurface(dismissible)) return true;
+
+    // An explicit X inside a tab panel closes that panel and selects a remaining tab.
+    if (closeTab) {
+      const panel = button.closest(".intel-view, .fm-panel, .view");
+      if (panel) {
+        const activeSelector = panel.classList.contains("fm-panel") ? "[data-fm-tab]" :
+          panel.classList.contains("view") ? "[data-view]" : "[data-tab]";
+        const tabButtons = [...document.querySelectorAll(activeSelector)];
+        const panelPrefix = panel.id.startsWith("fm-panel-") ? "fm-panel-" :
+          panel.id.startsWith("tab-") ? "tab-" : "view-";
+        const tabName = panel.id.startsWith(panelPrefix) ? panel.id.slice(panelPrefix.length) : "";
+        const currentButton = tabButtons.find((item) =>
+          (item.dataset.tab || item.dataset.fmTab || item.dataset.view) === tabName
+        );
+        if (!currentButton) return false;
+        currentButton.classList.remove("active");
+        currentButton.removeAttribute("aria-current");
+        panel.hidden = true;
+        panel.classList.remove("active");
+        const next = tabButtons.find((item) => item !== currentButton);
+        if (next) next.click();
+        return true;
+      }
     }
     return false;
   }
@@ -52,11 +78,14 @@
     const button = event.target.closest("button");
     if (!button) return;
 
-    const label = (button.textContent || "").trim().toLocaleLowerCase("pt-BR");
-    const ariaLabel = (button.getAttribute("aria-label") || "").trim().toLocaleLowerCase("pt-BR");
-    const isCancel = closeLabels.has(label);
-    const isCloseIcon = closeGlyphs.has((button.textContent || "").trim()) ||
-      ariaLabel === "fechar" || button.hasAttribute("data-close-modal");
+    const label = (button.textContent || "").trim();
+    const ariaLabel = (button.getAttribute("aria-label") || "").trim();
+    const title = (button.getAttribute("title") || "").trim();
+    const isCancel = cancelPattern.test(label);
+    const isCloseIcon = closeGlyphs.has(label) ||
+      closePattern.test(ariaLabel) || closePattern.test(title) ||
+      button.hasAttribute("data-close-modal") ||
+      button.hasAttribute("data-close-target");
 
     if (!isCancel && !isCloseIcon) return;
 
@@ -67,11 +96,20 @@
       return;
     }
 
-    if (button.hasAttribute("data-close-target") || button.closest("[data-dismissible-panel]")) {
+    const hasExplicitSurface = button.hasAttribute("data-close-target") ||
+      button.hasAttribute("data-close-modal") ||
+      button.closest("[data-dismissible-panel], [role='dialog'], [aria-modal='true'], .modal-overlay, .modal, .drawer, .sheet, [data-modal]");
+
+    if (hasExplicitSurface) {
       event.preventDefault();
-      closeAssociatedSurface(button);
+      closeAssociatedSurface(button, isCloseIcon && !isCancel);
+      return;
     }
-    // Inline cancellation buttons keep their domain-specific handlers intact.
+
+    if (isCloseIcon && closeAssociatedSurface(button, true)) {
+      event.preventDefault();
+    }
+    // Ordinary Cancel buttons keep their domain-specific handlers.
   });
 
   if (document.readyState === "loading") {
