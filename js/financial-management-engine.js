@@ -83,6 +83,7 @@ export function detectPossibleDuplicates(transactions = []) {
     amount: Number(items[0].amount),
     date: items[0].date,
     description: items[0].description || items[0].category || "Despesa",
+    category: items[0].category || "Outros",
     transactionIds: items.map((tx) => tx.id),
     evidence: items.length + " despesas com mesma data, moeda, valor e descrição/categoria.",
     confidence: "suspeita",
@@ -136,11 +137,12 @@ export function calculateManagementSnapshot({
       isNew: priorAmount === 0
     };
   }).sort((a, b) => b.difference - a.difference);
-  const monthBudgets = budgets.filter((budget) => budget.period === currentMonth && (!currency || budget.currency === currency));
+  const monthBudgets = budgets.filter((budget) => budget.period === currentMonth && (!currency || budget.currency === currency) && (!category || budget.category === category));
   const budgetStatus = evaluateBudgets({ budgets: monthBudgets, transactions: valid, rate, rates, month: currentMonth });
-  const anomalies = detectAnomalies(valid).filter((item) => !currency || item.currency === currency);
-  const recurring = detectRecurring(valid).filter((item) => !currency || item.currency === currency);
-  const duplicates = detectPossibleDuplicates(valid).filter((item) => !currency || item.currency === currency);
+  const expenseAnalysisEnabled = !type || type === "expense";
+  const anomalies = expenseAnalysisEnabled ? detectAnomalies(valid).filter((item) => (!currency || item.currency === currency) && (!category || item.category === category)) : [];
+  const recurring = expenseAnalysisEnabled ? detectRecurring(valid).filter((item) => (!currency || item.currency === currency) && (!category || item.category === category)) : [];
+  const duplicates = expenseAnalysisEnabled ? detectPossibleDuplicates(valid).filter((item) => (!currency || item.currency === currency) && (!category || item.category === category)) : [];
   const daysInMonth = new Date(Number(currentMonth.slice(0, 4)), Number(currentMonth.slice(5, 7)), 0).getDate();
   const elapsedDays = currentMonth === (now.getFullYear() + "-" + String(now.getMonth() + 1).padStart(2, "0"))
     ? Math.max(1, now.getDate())
