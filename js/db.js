@@ -264,6 +264,25 @@ function normalizeSetting(value) {
     }
     return { key, value: rate };
   }
+  if (key === "financialManagementPlan") {
+    if (!value.value || typeof value.value !== "object" || Array.isArray(value.value)) {
+      throw new TypeError("Plano de gestão financeira inválido.");
+    }
+    const serialized = JSON.stringify(value.value);
+    if (serialized.length > 30000) throw new TypeError("Plano de gestão financeira excede o limite permitido.");
+    const allowedStatuses = new Set(["pendente", "em-andamento", "concluida", "descartada"]);
+    const actions = Array.isArray(value.value.actions) ? value.value.actions.slice(0, 200).map((item) => {
+      if (!item || typeof item.id !== "string" || !/^[A-Za-z0-9_-]{1,180}$/.test(item.id)) {
+        throw new TypeError("Ação de planejamento inválida.");
+      }
+      const status = allowedStatuses.has(item.status) ? item.status : "pendente";
+      return { ...item, status };
+    }) : [];
+    const scenario = value.value.scenario && typeof value.value.scenario === "object" && !Array.isArray(value.value.scenario)
+      ? value.value.scenario : {};
+    const futureExpenses = Array.isArray(value.value.futureExpenses) ? value.value.futureExpenses.slice(0, 100) : [];
+    return { key, value: { actions, scenario, futureExpenses } };
+  }
   throw new TypeError(`Configuração não permitida: ${key || "sem chave"}.`);
 }
 
