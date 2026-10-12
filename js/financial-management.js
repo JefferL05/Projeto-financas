@@ -362,6 +362,15 @@ function runDecision(event) {
       addText(node, "span", "Fluxo após decisão: " + money(scenario.postDecisionFlow, currency)); scenarios.appendChild(node);
     });
     parent.appendChild(scenarios);
+    const alternatives = document.createElement("article"); alternatives.className = "fm-decision-card";
+    addText(alternatives, "h3", "Alternativas de custo");
+    result.alternatives.forEach((alternative) => {
+      const value = alternative.totalCost !== undefined
+        ? alternative.label + ": " + money(alternative.totalCost, currency)
+        : alternative.label + ": " + (alternative.monthsToSave === null ? "informe um aporte mensal" : alternative.monthsToSave + " meses para acumular o custo total");
+      addText(alternatives, "p", value);
+    });
+    parent.appendChild(alternatives);
     if (result.immediateImpact !== null) addText(parent, "p", "Saldo líquido disponível estimado após compra à vista: " + money(result.immediateImpact, currency), "fm-method");
   } catch (error) {
     const parent = $("#fmDecisionResult"); parent.replaceChildren(); addText(parent, "div", error.message || "Revise os valores informados.", "fm-empty");
@@ -508,7 +517,7 @@ function renderActions(snapshot) {
     addText(main, "h3", action.title);
     addText(main, "p", action.rationale);
     addText(main, "p", action.followUp);
-    addText(main, "p", "Economia potencial ilustrativa: " + money(action.potentialSaving || 0, action.currency || "PYG") + " por mês", "fm-action-meta");
+    addText(main, "p", "Economia potencial ilustrativa: " + money(action.potentialSaving || 0, action.currency || "PYG") + "/mês · " + money((action.potentialSaving || 0) * 12, action.currency || "PYG") + "/ano", "fm-action-meta");
     const controls = document.createElement("div"); controls.className = "fm-action-controls";
     const label = addText(controls, "label", "Estado da ação"); const select = document.createElement("select"); select.className = "input";
     select.setAttribute("aria-label", "Estado da ação " + action.title);
