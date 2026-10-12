@@ -54,6 +54,7 @@ document.addEventListener("DOMContentLoaded", init);
 async function init() {
   mapElements();
   bindEvents();
+  setupTheme();
   await seedDefaults();
   await reloadData();
   els.filterMonth.value = startOfMonthISO();
@@ -132,6 +133,39 @@ function bindEvents() {
   $("#saveSettingsBtn").addEventListener("click", saveSettings);
   $("#fetchRateBtn").addEventListener("click", fetchRate);
   $("#addCategoryBtn").addEventListener("click", addCategory);
+}
+
+function setupTheme() {
+  const root = document.documentElement;
+  const button = $("#themeToggleBtn");
+  if (!button) return;
+
+  // Persist only the visual preference; financial records remain in IndexedDB.
+  let savedTheme = "dark";
+  try {
+    savedTheme = localStorage.getItem("pf-theme") || "dark";
+  } catch {
+    // Storage can be unavailable in private browsing; the app remains usable.
+  }
+
+  const applyTheme = (theme) => {
+    const isLight = theme === "light";
+    root.dataset.theme = isLight ? "light" : "dark";
+    button.textContent = isLight ? "🌙 Tema escuro" : "☀️ Tema claro";
+    button.setAttribute("aria-label", isLight ? "Ativar tema escuro" : "Ativar tema claro");
+    button.setAttribute("aria-pressed", String(isLight));
+  };
+
+  applyTheme(savedTheme);
+  button.addEventListener("click", () => {
+    const nextTheme = root.dataset.theme === "light" ? "dark" : "light";
+    applyTheme(nextTheme);
+    try {
+      localStorage.setItem("pf-theme", nextTheme);
+    } catch {
+      // Theme still changes for the current session.
+    }
+  });
 }
 
 async function seedDefaults() {
