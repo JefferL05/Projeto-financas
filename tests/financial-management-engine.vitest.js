@@ -125,8 +125,8 @@ test("projeta saldo final somente quando as premissas são válidas e separa des
 test("sugere limites por categoria somente com histórico em dois ou mais meses", () => {
   const snapshot = calculateManagementSnapshot({
     transactions: [
-      tx("sep1", "2026-09-03", "expense", 100, "Mercado"),
-      tx("oct1", "2026-10-03", "expense", 200, "Mercado")
+      tx("aug1", "2026-08-03", "expense", 100, "Mercado"),
+      tx("sep1", "2026-09-03", "expense", 200, "Mercado")
     ],
     month: "2026-10", now: new Date("2026-10-12T12:00:00")
   });
