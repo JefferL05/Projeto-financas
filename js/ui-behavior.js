@@ -1,7 +1,7 @@
 /* Shared UI behavior: consistent dismissal and a persistent informational footer. */
 (() => {
-  const cancelPattern = /^cancelar(?:\\b|$)/i;
-  const closePattern = /^(?:fechar|close|dispensar)(?:\\b|$)/i;
+  const cancelPattern = /^cancelar(?:\b|$)/i;
+  const closePattern = /^(?:fechar|close|dispensar)(?:\b|$)/i;
   const closeGlyphs = new Set(["×", "✕", "✖", "✗", "x", "X"]);
 
   function installFooter() {
