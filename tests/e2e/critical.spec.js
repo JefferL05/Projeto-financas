@@ -180,3 +180,41 @@ test("E2E 8 — assistente entende como zerar conta PYG negativa", async ({ page
   await expect(page.locator("#chatLog")).toContainText(/zerar|adicionar/i);
   await expect(page.locator("#chatLog")).not.toContainText("Não entendi com segurança");
 });
+
+test("E2E — Cancelar e X fecham o modal sem salvar", async ({ page }) => {
+  await waitForApp(page);
+  await page.locator("#newTransactionBtn").click();
+  await expect(page.locator("#transactionDialog")).toBeVisible();
+  await page.locator('#transactionDialog .dialog-head button[aria-label="Fechar"]').click();
+  await expect(page.locator("#transactionDialog")).not.toBeVisible();
+
+  await page.locator("#newTransactionBtn").click();
+  await expect(page.locator("#transactionDialog")).toBeVisible();
+  await page.locator("#transactionDialog .dialog-actions button").filter({ hasText: "Cancelar" }).click();
+  await expect(page.locator("#transactionDialog")).not.toBeVisible();
+});
+
+test("E2E — tema persiste e rodapé informativo fica fixo em viewport móvel", async ({ page }) => {
+  await page.setViewportSize({ width: 320, height: 780 });
+  await waitForApp(page);
+  const themeButton = page.locator("#themeToggleBtn");
+  await themeButton.click();
+  await expect(page.locator("html")).toHaveAttribute("data-theme", "light");
+  await expect(themeButton).toContainText("Tema escuro");
+  await expect.poll(() => page.evaluate(() => localStorage.getItem("pf-theme"))).toBe("light");
+
+  const footer = page.locator(".app-info-footer");
+  await expect(footer).toBeVisible();
+  await expect(footer).toContainText("Faça backups regularmente");
+  const footerStyle = await footer.evaluate((element) => ({
+    position: getComputedStyle(element).position,
+    bottom: getComputedStyle(element).bottom,
+    viewportWidth: window.innerWidth,
+    documentWidth: document.documentElement.scrollWidth
+  }));
+  expect(footerStyle.position).toBe("fixed");
+  expect(Number.parseFloat(footerStyle.bottom)).toBeGreaterThan(0);
+  expect(footerStyle.documentWidth).toBeLessThanOrEqual(footerStyle.viewportWidth);
+  await page.reload();
+  await expect(page.locator("html")).toHaveAttribute("data-theme", "light");
+});
