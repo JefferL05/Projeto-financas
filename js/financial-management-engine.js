@@ -184,7 +184,7 @@ export function calculateManagementSnapshot({
   }));
   duplicates.forEach((item) => alerts.push({
     id: item.id, category: item.description, severity: "medium", title: "Possível lançamento duplicado",
-    currency: item.currency, impact: item.amount, evidence: item.evidence, action: item.action
+    currency: item.currency, impact: item.amount, potentialSaving: 0, evidence: item.evidence, action: item.action
   }));
   CURRENCIES.forEach((code) => {
     const totals = currentTotals[code];
@@ -194,7 +194,7 @@ export function calculateManagementSnapshot({
           id: "income-share-" + code + "-" + item.category.replace(/[^A-Za-z0-9_-]/g, "-"),
           category: item.category, severity: item.amount / totals.income >= 0.4 ? "high" : "medium",
           title: "Categoria consome parcela elevada da renda: " + item.category,
-          currency: code, impact: item.amount,
+          currency: code, impact: Math.max(0, item.amount - totals.income * 0.25),
           evidence: item.category + " representa " + (item.amount / totals.income * 100).toFixed(1) + "% das receitas registradas em " + code + " no período.",
           action: "Revise se os lançamentos são essenciais e compare alternativas; não reduza despesas essenciais sem avaliar consequências."
         });
@@ -293,7 +293,7 @@ export function buildActionPlan(snapshot) {
     actions.push({
       id: "action-" + alert.id.replace(/[^A-Za-z0-9_-]/g, "-").slice(0, 150), title: alert.title, rationale: alert.evidence, priority: alert.severity === "high" ? "alta" : "media",
       phase: alert.severity === "high" ? "imediata" : "30-dias", currency: alert.currency,
-      potentialSaving: Math.max(0, Number(alert.impact || 0) * 0.2),
+      potentialSaving: alert.potentialSaving === 0 ? 0 : Math.max(0, Number(alert.impact || 0) * 0.2),
       status: "pendente", followUp: alert.action
     });
   });
