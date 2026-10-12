@@ -4,7 +4,8 @@ import {
   detectPossibleDuplicates,
   simulateDecision,
   buildActionPlan,
-  validateActionStatus
+  validateActionStatus,
+  projectMonthEndBalance
 } from "../js/financial-management-engine.js";
 
 const tx = (id, date, type, amount, category = "Mercado", currency = "BRL", description = category) => ({
@@ -93,4 +94,14 @@ describe("motor da Gestão Financeira", () => {
     expect(validateActionStatus("concluida")).toBe("concluida");
     expect(validateActionStatus("invalid")).toBe("pendente");
   });
+});
+
+test("projeta saldo final somente quando as premissas são válidas e separa despesas planejadas", () => {
+  const result = projectMonthEndBalance({
+    currentBalance: 1000, incomeToDate: 2000, expensesToDate: 500,
+    elapsedDays: 10, daysInMonth: 30, plannedExpenses: 100
+  });
+  expect(result.value).toBeCloseTo(1000 + 2000 / 10 * 20 - (500 / 10 * 30 - 500) - 100);
+  expect(result.approximate).toBe(true);
+  expect(projectMonthEndBalance({ currentBalance: 1000, incomeToDate: 0, expensesToDate: 0, elapsedDays: 0, daysInMonth: 30 })).toBeNull();
 });
