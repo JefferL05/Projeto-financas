@@ -7,6 +7,7 @@ import { buildFinancialContext, buildConversationContext } from "./context-build
 import { getPrivacySettings, canUseOnlineAI } from "./privacy.js";
 import { generateNarrative } from "./online-provider.js";
 import { validateMutation, safeText } from "./validators.js";
+import { findFinancialKnowledgeAnswer } from "./financial-knowledge.js";
 
 const MEMORY_KEY = "ProjetoFinancasAIMemory";
 const MAX_MESSAGES = 8;
@@ -364,6 +365,30 @@ export async function askFinancialAssistant({
   memory.lastFilters = route.filters;
   memory.lastEntities = route.entities;
   remember(memory, "user", question);
+
+  if (route.intent === "unknown") {
+    const knowledge = findFinancialKnowledgeAnswer(question);
+    if (knowledge) {
+      remember(memory, "assistant", knowledge.summary);
+      return {
+        response: {
+          intent: route.intent,
+          confidence: knowledge.confidence,
+          title: knowledge.title,
+          summary: knowledge.summary,
+          metrics: [],
+          observations: knowledge.observations,
+          suggestedActions: knowledge.suggestedActions,
+          clarification: null,
+          requiresConfirmation: false,
+          proposedMutation: null,
+          source: knowledge.source
+        },
+        route,
+        mode: navigator.onLine ? "Conhecimento local" : "Modo offline"
+      };
+    }
+  }
 
   if (MUTATION_INTENTS.has(route.intent)) {
     let response;
