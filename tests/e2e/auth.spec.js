@@ -63,7 +63,7 @@ test("AUTH E2E 4 — acesso direto ao assistente também exige autenticação", 
 
 test("AUTH E2E 5 — bloquear agora oculta os dados imediatamente", async ({ page }) => {
   await createAccess(page);
-  await page.locator('[data-view="settings"]').click();
+  await page.locator('.nav-link[data-view="settings"]:visible').first().click();
   await expect(page.locator("#authSecurityCard")).toBeVisible();
   await page.getByRole("button", { name: "Bloquear agora" }).click();
   await expect(page.locator("#authLoginUser")).toBeVisible();
