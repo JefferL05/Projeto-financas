@@ -337,7 +337,7 @@ export function validateActionStatus(status) {
 
 export function projectMonthEndBalance({ currentBalance, incomeToDate, expensesToDate, elapsedDays, daysInMonth, plannedExpenses = 0 } = {}) {
   const values = [currentBalance, incomeToDate, expensesToDate, elapsedDays, daysInMonth, plannedExpenses].map(Number);
-  if (values.some((value) => !Number.isFinite(value)) || values[0] < 0 || values[1] < 0 || values[2] < 0 ||
+  if (values.some((value) => !Number.isFinite(value)) || values[1] < 0 || values[2] < 0 ||
       values[3] < 1 || values[4] < values[3] || values[4] > 31 || values[5] < 0) return null;
   const [balance, income, expenses, elapsed, days, planned] = values;
   const remainingDays = Math.max(0, days - elapsed);
