@@ -1,4 +1,4 @@
-const CACHE_NAME = "projeto-financas-v20";
+const CACHE_NAME = "projeto-financas-v21";
 
 const APP_SHELL = [
   "./",
@@ -30,6 +30,7 @@ const APP_SHELL = [
   "./js/financial-management.js",
   "./js/financial-management-engine.js",
   "./js/theme.js",
+  "./js/ui-behavior.js",
   "./js/auth/entry.js",
   "./js/auth/auth-ui.js",
   "./js/auth/auth-service.js",
@@ -94,6 +95,7 @@ async function cacheShell() {
     "./js/financial-management-engine.js",
     "./gestao-financeira.html",
     "./js/theme.js",
+    "./js/ui-behavior.js",
     "./js/db.js",
     "./js/utils.js",
     "./js/auth/entry.js",
