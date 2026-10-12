@@ -31,7 +31,7 @@ import {
   restoreBackup
 } from "./data/backup-service.js";
 
-import { $, $ } from "./dom.js";
+import { $, $$ } from "./dom.js";
 
 const state = {
   transactions: [],
