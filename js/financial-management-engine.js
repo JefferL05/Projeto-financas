@@ -110,6 +110,19 @@ export function calculateManagementSnapshot({
   const previousItems = visible.filter((tx) => inRange(tx, previousPeriod) && tx.type !== "transfer");
   const currentTotals = sameCurrencyTotals(currentItems);
   const previousTotals = sameCurrencyTotals(previousItems);
+  const comparisonMonths = [currentMonth, shiftMonth(currentMonth, -1), shiftMonth(currentMonth, -2)];
+  const averageTotals = Object.fromEntries(CURRENCIES.map((code) => {
+    const monthsWithRecords = comparisonMonths.map((monthKeyValue) => {
+      const monthItems = valid.filter((tx) => tx.currency === code && tx.date.startsWith(monthKeyValue) && tx.type !== "transfer");
+      return { month: monthKeyValue, totals: sameCurrencyTotals(monthItems)[code], hasRecords: monthItems.length > 0 };
+    }).filter((entry) => entry.hasRecords);
+    const sampleMonths = monthsWithRecords.length;
+    return [code, {
+      income: sampleMonths ? monthsWithRecords.reduce((sum, entry) => sum + entry.totals.income, 0) / sampleMonths : 0,
+      expense: sampleMonths ? monthsWithRecords.reduce((sum, entry) => sum + entry.totals.expense, 0) / sampleMonths : 0,
+      sampleMonths
+    }];
+  }));
   const categories = categoryTotals(currentItems);
   const previousCategories = categoryTotals(previousItems);
   const categoryChanges = categories.map((item) => {
@@ -181,7 +194,7 @@ export function calculateManagementSnapshot({
   return {
     month: currentMonth, currentPeriod, previousPeriod, currency: currency || "all", category: category || "all", type: type || "all",
     exchangeRate: rate, validTransactionCount: valid.length, filteredTransactionCount: visible.length,
-    currentTotals, previousTotals, categories, categoryChanges, budgetStatus, anomalies, recurring, duplicates,
+    currentTotals, previousTotals, averageTotals, categories, categoryChanges, budgetStatus, anomalies, recurring, duplicates,
     projectedExpense, incomeCommitment, dueSoon, goalProgress, alerts,
     hasEnoughHistory: previousItems.length > 0,
     methodology: "BRL e PYG são calculados separadamente; transferências são excluídas de receitas/despesas. A projeção replica a média diária observada no mês e não prevê eventos futuros."
@@ -196,20 +209,26 @@ export function simulateDecision({ cost = 0, monthlyPayment = 0, months = 1, cur
     throw new TypeError("Informe valores válidos para simular a decisão.");
   }
   const totals = snapshot?.currentTotals?.[currency];
-  const monthlyIncome = totals?.income || 0;
-  const monthlyExpense = totals?.expense || 0;
+  const average = snapshot?.averageTotals?.[currency];
+  const useAverage = Number(average?.sampleMonths || 0) >= 2;
+  const monthlyIncome = useAverage ? average.income : (totals?.income || 0);
+  const monthlyExpense = useAverage ? average.expense : (totals?.expense || 0);
   const baseline = monthlyIncome - monthlyExpense;
   const recurringCommitments = schedules.filter((item) => item.active !== false && item.currency === currency)
     .reduce((sum, item) => sum + Number(item.amount || 0), 0);
   const monthlyImpact = payment || (duration > 1 ? totalCost / duration : totalCost);
   const postDecisionFlow = baseline - monthlyImpact;
-  const enoughData = transactions.filter((tx) => tx.currency === currency && tx.type !== "transfer").length >= 3;
-  const currentBalanceKnown = Array.isArray(snapshot?.balances) && Number.isFinite(snapshot.balances[currency]);
+  const relevantTransactions = transactions.filter((tx) => tx.currency === currency && tx.type !== "transfer");
+  const enoughData = relevantTransactions.length >= 3 && (useAverage || relevantTransactions.length >= 6);
+  const currentBalanceKnown = snapshot?.balances && Number.isFinite(snapshot.balances[currency]);
+  const reserveBalance = Number(snapshot?.reserveBalances?.[currency] || 0);
+  const immediateCost = payment > 0 ? payment : totalCost;
   let recommendation = "Não há informações suficientes para uma recomendação confiável.";
   if (enoughData && monthlyIncome > 0) {
-    recommendation = postDecisionFlow < 0 ? "A decisão pode gerar déficit mensal com base no período selecionado." :
+    recommendation = postDecisionFlow < 0 ? "A decisão pode gerar déficit mensal com base na média histórica disponível." :
+      currentBalanceKnown && immediateCost > Number(snapshot.balances[currency]) && reserveBalance <= 0 ? "A compra imediata supera o saldo líquido disponível registrado; confirme a forma de pagamento e a reserva antes de decidir." :
       monthlyImpact > monthlyIncome * 0.2 ? "O impacto é relevante em relação à renda; compare alternativas e preserve uma reserva." :
-      "O fluxo estimado permanece positivo, mas confira compromissos, reserva e despesas futuras antes de decidir.";
+      "O fluxo estimado permanece positivo, mas confira compromissos, reserva e despesas essenciais antes de decidir.";
   }
   const scenarios = [
     { name: "Conservador", income: monthlyIncome * 0.9, expense: monthlyExpense * 1.1 },
@@ -218,8 +237,9 @@ export function simulateDecision({ cost = 0, monthlyPayment = 0, months = 1, cur
   ].map((scenario) => ({ ...scenario, postDecisionFlow: scenario.income - scenario.expense - monthlyImpact }));
   return {
     currency, totalCost, monthlyImpact, duration, baselineMonthlyFlow: baseline, postDecisionFlow,
-    immediateImpact: currentBalanceKnown ? Number(snapshot.balances[currency]) - totalCost : null,
-    currentBalanceKnown, monthlyIncome, monthlyExpense, recurringCommitments,
+    immediateImpact: currentBalanceKnown ? Number(snapshot.balances[currency]) - immediateCost : null,
+    currentBalanceKnown, reserveBalance, averageMonthsUsed: useAverage ? average.sampleMonths : 0,
+    monthlyIncome, monthlyExpense, recurringCommitments,
     goalCount: goals.filter((goal) => goal.currency === currency).length,
     enoughData, recommendation, scenarios,
     caveats: currentBalanceKnown ? ["Saldo imediato usa saldo informado pelo painel."] : ["Saldo atual confiável não foi disponibilizado para esta simulação."],
