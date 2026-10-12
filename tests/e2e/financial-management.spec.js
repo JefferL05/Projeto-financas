@@ -52,3 +52,13 @@ test("Gestão Financeira permanece utilizável em viewport de 320px", async ({ p
   }));
   expect(dimensions.content).toBeLessThanOrEqual(dimensions.viewport + 1);
 });
+
+test("menu principal oferece Gestão Financeira", async ({ page }) => {
+  await page.goto("/index.html");
+  await unlockIfNeeded(page);
+  const link = page.locator('a[href="gestao-financeira.html"]').first();
+  await expect(link).toContainText("Gestão Financeira");
+  await link.click();
+  await expect(page).toHaveURL(/gestao-financeira\.html$/);
+  await expect(page.locator("h1")).toHaveText("Gestão Financeira");
+});
