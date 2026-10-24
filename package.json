@@ -1,8 +1,13 @@
 {
   "name": "projeto-financas",
   "version": "2.0.0",
+  "description": "Aplicação web de gestão financeira pessoal multi-moeda (BRL/PYG), local-first, offline-first e PWA. Design system Fronteira Finance.",
   "private": true,
   "type": "module",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/JefferL05/Projeto-financas.git"
+  },
   "scripts": {
     "test": "vitest run",
     "test:watch": "vitest",

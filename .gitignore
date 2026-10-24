@@ -1,0 +1,37 @@
+# Dependências
+node_modules/
+package-lock.json
+pnpm-lock.yaml
+yarn.lock
+
+# Build / distribuição
+dist/
+build/
+out/
+
+# IDE / editor
+.vscode/
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Testes / cobertura
+coverage/
+vitest.repl.toml
+playwright-report/
+test-results/

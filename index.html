@@ -1,105 +1,210 @@
 <!DOCTYPE html>
-<html lang="pt-BR">
+<html lang="pt-BR" class="dark">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-  <meta name="theme-color" content="#0b0f14" />
-  <meta name="description" content="Gestão financeira pessoal multi-moeda em PYG e BRL, local-first e compatível com PWA." />
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://cdn.jsdelivr.net; style-src 'self'; img-src 'self' data:; connect-src 'self' https://economia.awesomeapi.com.br; object-src 'none'; base-uri 'self'; frame-ancestors 'none'; form-action 'self';" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <meta name="theme-color" content="#0b1326" />
+  <meta name="description" content="Gestão financeira pessoal multi-moeda em PYG e BRL, local-first, offline-first e PWA." />
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://cdn.jsdelivr.net https://cdn.tailwindcss.com https://fonts.googleapis.com https://fonts.gstatic.com; style-src 'self' https://fonts.googleapis.com 'unsafe-inline'; img-src 'self' data: https:; connect-src 'self' https://economia.awesomeapi.com.br; object-src 'none'; base-uri 'self'; frame-ancestors 'none'; form-action 'self';" />
   <title>Projeto Finanças | Brasil & Paraguai</title>
+
   <link rel="manifest" href="manifest.json" />
+  <link rel="stylesheet" href="css/design-system.css" />
   <link rel="stylesheet" href="css/styles.css" />
-  <link rel="stylesheet" href="css/premium.css" />
+  <link rel="stylesheet" href="css/v2.css" />
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js" defer></script>
+
   <script type="module" src="js/ui-behavior.js"></script>
   <script type="module" src="js/app.js"></script>
 </head>
 <body class="has-bottom-nav">
+
+  <!-- ============================ APP SHELL ============================ -->
   <div class="app-shell">
-    <aside class="sidebar">
-      <div class="brand">
-        <div class="brand-mark">🇵🇾🇧🇷</div>
-        <div><strong>Projeto Finanças</strong><small>Brasil & Paraguai</small></div>
+
+    <!-- Topbar (desktop) / Header (mobile) -->
+    <header class="topbar">
+      <div class="flex items-center justify-between">
+        <div class="flex items-center gap-2">
+          <div class="w-8 h-8 rounded-lg bg-primary-container text-on-primary-container flex items-center justify-center text-[18px] font-bold">🇵🇾🇧🇷</div>
+          <div>
+            <p class="eyebrow text-xs uppercase tracking-wider text-on-surface-variant font-semibold">Projeto Finanças</p>
+            <h1 id="pageTitle" class="text-headline-lg text-on-surface font-bold">Dashboard</h1>
+          </div>
+        </div>
+
+        <div class="topbar-actions flex items-center gap-2 flex-wrap">
+          <button class="btn btn-ghost px-3" id="themeToggleBtn" type="button" aria-label="Ativar tema claro" aria-pressed="false">☀️</button>
+          <button class="btn btn-surface px-3" id="quickImportBtn" type="button">Importação rápida</button>
+          <button class="btn btn-primary px-4" id="newTransactionBtn" type="button">+ Novo lançamento</button>
+        </div>
       </div>
-      <nav class="nav" aria-label="Navegação principal">
-        <button class="nav-link active" data-view="dashboard" aria-current="page">Dashboard</button>
-        <button class="nav-link" data-view="transactions">Transações</button>
-        <button class="nav-link" data-view="analytics">Analytics</button>
-        <a class="nav-link nav-anchor" href="gestao.html">🏦 Contas & Planejamento</a>
-        <a class="nav-link nav-anchor" href="gestao-financeira.html">🧭 Gestão Financeira</a>
-        <a class="nav-link nav-anchor" href="diagnostico.html">🧠 Inteligência financeira</a>
-        <a class="nav-link nav-anchor" href="inteligencia.html#ia">🤖 Assistente IA</a>
-        <a class="nav-link nav-anchor" href="inteligencia.html#planejamento">🎯 Longo Prazo</a>
-        <button class="nav-link" data-view="data">Dados & Backup</button>
-        <button class="nav-link" data-view="settings">Configurações</button>
-      </nav>
-      <div class="sidebar-footer"><span id="storageStatus">IndexedDB v6</span><span id="onlineStatus">Online</span></div>
-    </aside>
+    </header>
 
-    <main class="main">
-      <header class="topbar">
-        <div>
-          <p class="eyebrow">🇵🇾 🇧🇷 Controle financeiro Brasil & Paraguai</p>
-          <h1 id="pageTitle">Dashboard</h1>
-        </div>
-        <div class="topbar-actions">
-          <a class="btn btn-secondary nav-anchor" href="gestao.html">🏦 Contas</a>
-          <a class="btn btn-secondary nav-anchor" href="gestao-financeira.html">🧭 Gestão Financeira</a>
-          <a class="btn btn-secondary nav-anchor" href="inteligencia.html#ia">🤖 IA</a>
-          <button class="btn btn-secondary" id="themeToggleBtn" type="button" aria-label="Ativar tema claro" aria-pressed="false">☀️ Tema claro</button>
-          <button class="btn btn-secondary" id="quickImportBtn">Importação rápida</button>
-          <button class="btn btn-primary" id="newTransactionBtn">+ Nova transação</button>
-        </div>
-      </header>
+    <!-- ============================ MAIN CONTENT (views) ============================ -->
+    <main class="main pb-32 px-4">
 
+      <!-- VIEW: DASHBOARD (inspirada na tela "dashboard_visao_geral" do ZIP) -->
       <section class="view active" id="view-dashboard">
-        <div class="summary-grid dashboard-summary-grid">
-          <article class="card metric-card">
-            <span>Patrimônio líquido</span>
-            <strong id="netWorthBalance">—</strong>
-            <small class="muted">Ativos menos dívidas</small>
-          </article>
-          <article class="card metric-card">
-            <span>Dinheiro disponível</span>
-            <strong id="availableBalance">—</strong>
-            <small class="muted">Contas líquidas no orçamento</small>
-          </article>
-          <article class="card metric-card">
-            <span>Fluxo líquido do mês</span>
-            <strong id="consolidatedBalance">—</strong>
-            <small id="rateStatus" class="muted">Receitas menos despesas</small>
-          </article>
-          <article class="card metric-card">
-            <span>Gasto médio diário</span>
-            <strong id="dailyAverage">—</strong>
-            <small class="muted" id="projectionText">Projeção mensal indisponível</small>
-          </article>
-          <article class="card metric-card">
-            <span>Movimentação em Guaranis <span class="nowrap">🇵🇾</span></span>
-            <strong id="pygBalance">Gs. 0</strong>
-            <div class="metric-row"><small class="income" id="pygIncome">+ Gs. 0</small><small class="expense" id="pygExpense">- Gs. 0</small></div>
-          </article>
-          <article class="card metric-card">
-            <span>Movimentação em Reais <span class="nowrap">🇧🇷</span></span>
-            <strong id="brlBalance">R$ 0,00</strong>
-            <div class="metric-row"><small class="income" id="brlIncome">+ R$ 0,00</small><small class="expense" id="brlExpense">- R$ 0,00</small></div>
-          </article>
-        </div>
 
-        <div class="chart-grid">
-          <article class="card"><div class="card-head"><div><h2>Fluxo de caixa</h2><p>Entradas e saídas dos últimos 6 meses</p></div></div><div class="chart-wrap"><canvas id="cashflowChart"></canvas></div></article>
-          <article class="card"><div class="card-head"><div><h2>Gastos por categoria</h2><p>Distribuição do mês atual</p></div></div><div class="chart-wrap"><canvas id="categoryChart"></canvas></div></article>
-        </div>
+        <!-- 1. Cartão de Patrimônio Líquido Unificado -->
+        <section class="relative overflow-hidden rounded-xl bg-surface-container p-md shadow-xl mb-md">
+          <div class="absolute -right-10 -top-10 w-44 h-44 rounded-full bg-primary/10 blur-[64px] pointer-events-none"></div>
+          <div class="absolute -left-12 -bottom-12 w-40 h-40 rounded-full bg-secondary/10 blur-[64px] pointer-events-none"></div>
+          <div class="relative z-10 flex flex-col gap-sm">
 
-        <article class="card">
-          <div class="card-head"><div><h2>Transações recentes</h2><p>Últimos lançamentos registrados</p></div><button class="link-btn" data-view-jump="transactions">Ver todas</button></div>
-          <div id="recentTransactions" class="transaction-list"></div>
-        </article>
+            <div class="flex items-center justify-between">
+              <div class="flex items-center gap-xs">
+                <span class="text-label-sm text-on-surface-variant uppercase tracking-wider">Patrimônio Consolidado</span>
+                <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-secondary-container/30 text-secondary">
+                  Bivalente
+                </span>
+              </div>
+              <button class="flex items-center justify-center w-8 h-8 rounded-full bg-surface-container-high text-on-surface-variant hover:text-on-surface active:scale-95 transition-all" id="toggleBalanceBtn" type="button" aria-label="Ocultar ou mostrar saldo">
+                <span class="material-symbols-outlined text-[18px]" id="toggleBalanceIcon">visibility</span>
+              </button>
+            </div>
+
+            <div class="flex flex-col gap-0">
+              <div class="flex items-baseline gap-xs">
+                <span class="text-currency-display-mobile text-on-surface tracking-tight" id="mainBalanceVal">R$ 0,00</span>
+                <span class="inline-flex items-center px-1.5 py-0.5 rounded-full bg-secondary/10 text-secondary font-currency-tabular text-body-sm" id="mainCurrencyChip">BRL</span>
+              </div>
+              <div class="flex items-center gap-2 text-on-surface-variant">
+                <span class="text-currency-tabular text-body-sm text-tertiary" id="subBalanceVal">≈ ₲ 0</span>
+                <span class="text-[11px] text-on-surface-variant/70 font-body-sm" id="rateHint">(Taxa ₲ 1.300 / R$ 1)</span>
+              </div>
+            </div>
+
+            <!-- Variação Mensal & Pílulas de Ação Rápida -->
+            <div class="flex flex-wrap items-center justify-between gap-xs pt-sm">
+              <div class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-secondary-container/20 text-secondary">
+                <span class="material-symbols-outlined text-[16px]">trending_up</span>
+                <span class="text-label-md" id="monthlyVariation">+0% este mês</span>
+              </div>
+              <div class="flex items-center gap-1">
+                <span class="w-2 h-2 rounded-full bg-secondary animate-pulse"></span>
+                <span class="text-label-sm text-on-surface-variant font-mono text-[11px]">Tempo Real</span>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- 2. Widget de Câmbio em Tempo Real & Simulador Express -->
+        <section class="rounded-xl bg-surface-container-low p-md shadow-md flex flex-col gap-sm mb-md">
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-2">
+              <div class="w-7 h-7 rounded-lg bg-surface-container-high flex items-center justify-center text-primary">
+                <span class="material-symbols-outlined text-[18px]">currency_exchange</span>
+              </div>
+              <div>
+                <span class="text-label-md text-on-surface block">Câmbio Comercial Foz / CDE</span>
+                <span class="text-body-sm text-on-surface-variant">Paridade BRL ⇄ PYG</span>
+              </div>
+            </div>
+            <span class="text-label-sm px-2.5 py-1 rounded-full bg-primary-container/20 text-primary font-bold" id="rateTag">Cotação Local</span>
+          </div>
+
+          <div class="grid grid-cols-2 gap-sm items-center bg-surface-container-high/60 rounded-xl p-sm">
+            <div class="flex flex-col">
+              <span class="text-label-sm text-on-surface-variant">Cotação Base</span>
+              <span class="text-currency-tabular text-secondary font-bold" id="baseRateVal">₲ 1.300,00</span>
+            </div>
+            <div class="flex items-center justify-end gap-1">
+              <button class="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-surface-container text-on-surface hover:bg-surface-bright active:scale-95 transition-all" id="refreshRateBtn" type="button">
+                <span class="material-symbols-outlined text-[15px] text-primary" id="syncRateIcon">sync</span>
+                <span class="text-label-sm font-medium">Atualizar</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Mini Simulador Dinâmico -->
+          <div class="flex items-center justify-between bg-surface-container-lowest px-sm py-2 rounded-lg">
+            <div class="flex items-center gap-1.5">
+              <span class="text-label-sm px-1.5 py-0.5 rounded bg-surface-container-high text-on-surface font-currency-tabular">Simulador</span>
+              <span class="text-currency-tabular text-body-sm text-on-surface" id="simInput">R$ 100</span>
+            </div>
+            <span class="material-symbols-outlined text-[15px] text-on-surface-variant">arrow_forward</span>
+            <div class="flex items-center gap-1">
+              <span class="text-currency-tabular text-body-sm text-tertiary font-bold" id="simOutput">₲ 130.000</span>
+              <span class="text-label-sm text-on-surface-variant">PYG</span>
+            </div>
+          </div>
+        </section>
+
+        <!-- 3. Resumo Mensal de Entradas e Saídas -->
+        <section class="flex flex-col gap-xs mb-md">
+          <div class="flex items-center justify-between px-1">
+            <h2 class="text-headline-sm text-on-surface" id="periodTitle">Fevereiro 2025</h2>
+            <div class="inline-flex items-center gap-1 text-secondary">
+              <span class="text-label-sm text-label-sm">Balanço:</span>
+              <span class="text-currency-tabular text-label-md font-bold" id="monthlyNet">+R$ 0,00</span>
+            </div>
+          </div>
+          <div class="grid grid-cols-2 gap-sm">
+            <div class="flex flex-col p-sm rounded-xl bg-surface-container shadow-sm relative overflow-hidden">
+              <div class="flex items-center justify-between mb-1">
+                <span class="text-label-sm text-on-surface-variant">Entradas</span>
+                <div class="w-6 h-6 rounded-full bg-secondary/15 flex items-center justify-center text-secondary">
+                  <span class="material-symbols-outlined text-[16px]">arrow_upward</span>
+                </div>
+              </div>
+              <span class="text-currency-tabular text-headline-sm text-secondary font-bold" id="monthIncome">R$ 0,00</span>
+              <span class="text-body-sm text-on-surface-variant/80 mt-0.5" id="monthIncomeCount">0 depósitos</span>
+            </div>
+            <div class="flex flex-col p-sm rounded-xl bg-surface-container shadow-sm relative overflow-hidden">
+              <div class="flex items-center justify-between mb-1">
+                <span class="text-label-sm text-on-surface-variant">Saídas</span>
+                <div class="w-6 h-6 rounded-full bg-error/15 flex items-center justify-center text-error">
+                  <span class="material-symbols-outlined text-[16px]">arrow_downward</span>
+                </div>
+              </div>
+              <span class="text-currency-tabular text-headline-sm text-error font-bold" id="monthExpense">R$ 0,00</span>
+              <span class="text-body-sm text-on-surface-variant/80 mt-0.5" id="monthExpenseCount">0 lançamentos</span>
+            </div>
+          </div>
+        </section>
+
+        <!-- 4. Acesso Rápido a Contas (Carrossel Horizontal com Snap) -->
+        <section class="flex flex-col gap-xs mb-md">
+          <div class="flex items-center justify-between px-1">
+            <h2 class="text-headline-sm text-on-surface">Minhas Contas</h2>
+            <span class="text-label-sm text-primary" id="accountsCount">Ver todas (0)</span>
+          </div>
+          <div class="flex gap-sm overflow-x-auto pb-1 -mx-4 px-4 scrollbar-none snap-x snap-mandatory" id="accountsCarousel">
+            <!-- Contas injetadas pelo JS -->
+          </div>
+        </section>
+
+        <!-- 5. Últimas Transações com Filtro Rápido -->
+        <section class="flex flex-col gap-sm">
+          <div class="flex items-center justify-between px-1">
+            <h2 class="text-headline-sm text-on-surface">Transações Recentes</h2>
+            <div class="inline-flex rounded-lg bg-surface-container p-0.5" id="txFilterBar">
+              <button class="filter-btn px-2.5 py-1 rounded-md text-label-sm font-label-sm bg-primary text-on-primary shadow-sm font-semibold transition-all" data-filter="all" type="button">Todas</button>
+              <button class="filter-btn px-2.5 py-1 rounded-md text-label-sm font-label-sm text-on-surface-variant hover:text-on-surface transition-all" data-filter="BRL" type="button">BRL</button>
+              <button class="filter-btn px-2.5 py-1 rounded-md text-label-sm font-label-sm text-on-surface-variant hover:text-on-surface transition-all" data-filter="PYG" type="button">PYG</button>
+            </div>
+          </div>
+          <div class="flex flex-col gap-xs" id="recentTransactions">
+            <!-- Transações injetadas pelo JS -->
+          </div>
+        </section>
+
+        <!-- Tag de Status Local-First -->
+        <footer class="mt-md flex items-center justify-center">
+          <div class="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-surface-container-lowest text-on-surface-variant/80 shadow-inner">
+            <span class="material-symbols-outlined text-[15px] text-secondary">lock</span>
+            <span class="text-body-sm font-mono tracking-tight text-[11px]" id="dbStatus">IndexedDB v6 • Offline e Seguro</span>
+          </div>
+        </footer>
+
       </section>
 
+      <!-- VIEW: TRANSAÇÕES (lista completa com filtros) -->
       <section class="view" id="view-transactions">
-        <article class="card">
-          <div class="filters-grid filters-grid-accounts">
+        <article class="card mb-md">
+          <div class="filters-grid filters-grid-accounts p-md">
             <input class="input" id="searchInput" aria-label="Buscar transação" placeholder="Buscar descrição..." />
             <input class="input" id="filterMonth" aria-label="Filtrar por mês" type="month" />
             <select class="input" id="filterType" aria-label="Filtrar por tipo"><option value="">Todos os tipos</option><option value="income">Entradas</option><option value="expense">Saídas</option><option value="transfer">Transferências</option></select>
@@ -109,80 +214,219 @@
           </div>
         </article>
         <article class="card">
-          <div class="card-head"><div><h2>Histórico</h2><p id="transactionCount">0 transações</p></div></div>
-          <div id="transactionsList" class="transaction-list"></div>
+          <div class="card-head"><div><h2 class="text-headline-lg text-on-surface">Histórico</h2><p class="text-body-sm text-on-surface-variant" id="transactionCount">0 transações</p></div></div>
+          <div id="transactionsList" class="transaction-list">
+            <!-- Transações injetadas pelo JS -->
+          </div>
         </article>
       </section>
 
+      <!-- VIEW: ANALYTICS -->
       <section class="view" id="view-analytics">
         <div class="analytics-grid">
-          <article class="card stat-card"><span>Maior categoria</span><strong id="topCategory">—</strong></article>
-          <article class="card stat-card"><span>Maior gasto</span><strong id="largestExpense">—</strong></article>
-          <article class="card stat-card"><span>Taxa de poupança</span><strong id="savingsRate">—</strong></article>
-          <article class="card stat-card"><span>Projeção fim do mês</span><strong id="monthProjection">—</strong></article>
+          <article class="card stat-card p-md"><span class="text-label-sm text-on-surface-variant">Maior categoria</span><strong class="text-headline-sm text-on-surface" id="topCategory">—</strong></article>
+          <article class="card stat-card p-md"><span class="text-label-sm text-on-surface-variant">Maior gasto</span><strong class="text-headline-sm text-on-surface" id="largestExpense">—</strong></article>
+          <article class="card stat-card p-md"><span class="text-label-sm text-on-surface-variant">Taxa de poupança</span><strong class="text-headline-sm text-on-surface" id="savingsRate">—</strong></article>
+          <article class="card stat-card p-md"><span class="text-label-sm text-on-surface-variant">Projeção fim do mês</span><strong class="text-headline-sm text-on-surface" id="monthProjection">—</strong></article>
         </div>
         <div class="chart-grid">
-          <article class="card"><div class="card-head"><div><h2>Evolução do patrimônio estimado</h2><p>Histórico de saldos acumulados; contas atuais definem o patrimônio real.</p></div></div><div class="chart-wrap"><canvas id="balanceChart"></canvas></div></article>
-          <article class="card"><div class="card-head"><div><h2>Ranking de categorias</h2><p>Top 8 gastos do período</p></div></div><div id="categoryRanking" class="ranking-list"></div></article>
+          <article class="card"><div class="card-head"><div><h2 class="text-headline-sm text-on-surface">Evolução do patrimônio estimado</h2><p class="text-body-sm text-on-surface-variant">Histórico de saldos acumulados; contas atuais definem o patrimônio real.</p></div></div><div class="chart-wrap"><canvas id="balanceChart"></canvas></div></article>
+          <article class="card"><div class="card-head"><div><h2 class="text-headline-sm text-on-surface">Ranking de categorias</h2><p class="text-body-sm text-on-surface-variant">Top 8 gastos do período</p></div></div><div id="categoryRanking" class="ranking-list"></div></article>
         </div>
       </section>
 
+      <!-- VIEW: DADOS & BACKUP -->
       <section class="view" id="view-data">
         <div class="data-grid">
-          <article class="card"><h2>Backup completo</h2><p class="muted">Inclui transações, contas, metas, orçamentos, compromissos, regras, configurações e cotações.</p><div class="button-stack"><button class="btn btn-primary" id="exportJsonBtn">Exportar JSON</button><label class="btn btn-secondary file-label">Importar JSON<input type="file" id="importJsonInput" accept=".json,application/json" hidden /></label></div></article>
-          <article class="card"><h2>Planilhas</h2><p class="muted">Exporte transações para Excel ou Google Sheets.</p><div class="button-stack"><button class="btn btn-primary" id="exportCsvBtn">Exportar CSV</button><label class="btn btn-secondary file-label">Importar CSV<input type="file" id="importCsvInput" accept=".csv,text/csv" hidden /></label></div></article>
-          <article class="card"><h2>Banco local</h2><p class="muted">IndexedDB v6 com contas, transferências e planejamento.</p><dl class="db-stats"><div><dt>Transações</dt><dd id="dbTransactions">0</dd></div><div><dt>Contas</dt><dd id="dbAccounts">0</dd></div><div><dt>Compromissos</dt><dd id="dbSchedules">0</dd></div><div><dt>Categorias</dt><dd id="dbCategories">0</dd></div><div><dt>Cotações</dt><dd id="dbRates">0</dd></div></dl></article>
-          <article class="card danger-card"><h2>Zona de risco</h2><p class="muted">Apaga todos os dados locais deste navegador.</p><button class="btn btn-danger" id="clearDatabaseBtn">Limpar banco local</button></article>
+          <article class="card p-md"><h2 class="text-headline-sm text-on-surface">Backup completo</h2><p class="text-body-sm text-on-surface-variant">Inclui transações, contas, metas, orçamentos, compromissos, regras, configurações e cotações.</p><div class="button-stack"><button class="btn btn-primary" id="exportJsonBtn">Exportar JSON</button><label class="btn btn-secondary file-label">Importar JSON<input type="file" id="importJsonInput" accept=".json,application/json" hidden /></label></div></article>
+          <article class="card p-md"><h2 class="text-headline-sm text-on-surface">Planilhas</h2><p class="text-body-sm text-on-surface-variant">Exporte transações para Excel ou Google Sheets.</p><div class="button-stack"><button class="btn btn-primary" id="exportCsvBtn">Exportar CSV</button><label class="btn btn-secondary file-label">Importar CSV<input type="file" id="importCsvInput" accept=".csv,text/csv" hidden /></label></div></article>
+          <article class="card p-md"><h2 class="text-headline-sm text-on-surface">Banco local</h2><p class="text-body-sm text-on-surface-variant">IndexedDB v6 com contas, transferências e planejamento.</p><dl class="db-stats"><div><dt class="text-label-sm text-on-surface-variant">Transações</dt><dd class="text-body-md text-on-surface" id="dbTransactions">0</dd></div><div><dt class="text-label-sm text-on-surface-variant">Contas</dt><dd class="text-body-md text-on-surface" id="dbAccounts">0</dd></div><div><dt class="text-label-sm text-on-surface-variant">Compromissos</dt><dd class="text-body-md text-on-surface" id="dbSchedules">0</dd></div><div><dt class="text-label-sm text-on-surface-variant">Categorias</dt><dd class="text-body-md text-on-surface" id="dbCategories">0</dd></div><div><dt class="text-label-sm text-on-surface-variant">Cotações</dt><dd class="text-body-md text-on-surface" id="dbRates">0</dd></div></dl></article>
+          <article class="card p-md"><h2 class="text-headline-sm text-on-surface text-error">Zona de risco</h2><p class="text-body-sm text-on-surface-variant">Apaga todos os dados locais deste navegador.</p><button class="btn btn-danger" id="clearDatabaseBtn">Limpar banco local</button></article>
         </div>
       </section>
 
+      <!-- VIEW: CONFIGURAÇÕES -->
       <section class="view" id="view-settings">
         <div class="settings-grid">
-          <article class="card"><h2>Câmbio</h2><div class="field"><label for="exchangeRate">1 BRL em PYG</label><input class="input" id="exchangeRate" type="number" min="1" step="1" /></div><div class="field"><label for="baseCurrency">Moeda base</label><select class="input" id="baseCurrency"><option value="PYG">Guarani (PYG)</option><option value="BRL">Real (BRL)</option></select></div><div class="button-stack"><button class="btn btn-secondary" id="fetchRateBtn">Buscar cotação online</button><button class="btn btn-primary" id="saveSettingsBtn">Salvar configurações</button></div></article>
-          <article class="card"><h2>Categorias</h2><div class="inline-form"><input class="input" id="newCategoryInput" maxlength="60" placeholder="Nova categoria" /><button class="btn btn-primary" id="addCategoryBtn">Adicionar</button></div><div id="categoryManager" class="chip-list"></div></article>
+          <article class="card p-md"><h2 class="text-headline-sm text-on-surface">Câmbio</h2><div class="field"><label class="text-label-sm text-on-surface-variant" for="exchangeRate">1 BRL em PYG</label><input class="input" id="exchangeRate" type="number" min="1" step="1" /></div><div class="field"><label class="text-label-sm text-on-surface-variant" for="baseCurrency">Moeda base</label><select class="input" id="baseCurrency"><option value="PYG">Guaraní (PYG)</option><option value="BRL">Real (BRL)</option></select></div><div class="button-stack"><button class="btn btn-secondary" id="fetchRateBtn">Buscar cotação online</button><button class="btn btn-primary" id="saveSettingsBtn">Salvar configurações</button></div></article>
+          <article class="card p-md"><h2 class="text-headline-sm text-on-surface">Categorias</h2><div class="inline-form"><input class="input" id="newCategoryInput" maxlength="60" placeholder="Nova categoria" /><button class="btn btn-primary" id="addCategoryBtn">Adicionar</button></div><div id="categoryManager" class="chip-list"></div></article>
         </div>
       </section>
+
     </main>
+
+    <!-- ============================ BOTTOM NAVIGATION (inspirada no ZIP) ============================ -->
+    <nav class="bottom-nav" aria-label="Navegação principal (celular)">
+      <div class="flex justify-around items-center h-16 px-xs relative">
+        <a class="bottom-nav-item active" data-path="dashboard" href="#" data-view="dashboard"><span class="material-symbols-outlined">dashboard</span><span class="text-label-sm">Início</span></a>
+        <a class="bottom-nav-item" data-path="gestao-contas" href="#" data-view="transactions"><span class="material-symbols-outlined">account_balance_wallet</span><span class="text-label-sm">Transações</span></a>
+        <div class="flex items-center justify-center -mt-4">
+          <a class="bottom-nav-fab" aria-label="Novo Lançamento" data-path="novo-lancamento" href="#" id="fabNewTransaction"><span class="material-symbols-outlined">add</span></a>
+        </div>
+        <a class="bottom-nav-item" data-path="metas-orcamentos" href="#" data-view="settings"><span class="material-symbols-outlined">track_changes</span><span class="text-label-sm">Metas</span></a>
+        <a class="bottom-nav-item" data-path="inteligencia-ia" href="#" id="navIA"><span class="material-symbols-outlined">auto_awesome</span><span class="text-label-sm">IA Fin</span></a>
+      </div>
+    </nav>
+
   </div>
 
-  <nav class="bottom-nav" aria-label="Navegação principal (celular)">
-  <button class="nav-link active" data-view="dashboard" type="button" aria-current="page"><span aria-hidden="true">📊</span>Início</button>
-  <button class="nav-link" data-view="transactions" type="button"><span aria-hidden="true">🧾</span>Transações</button>
-  <button class="nav-link" data-view="analytics" type="button"><span aria-hidden="true">📈</span>Analytics</button>
-  <a class="nav-link nav-anchor" href="gestao-financeira.html"><span aria-hidden="true">🧭</span>Gestão Financeira</a>
-  <button class="nav-link" data-view="data" type="button"><span aria-hidden="true">💾</span>Dados</button>
-  <button class="nav-link" data-view="settings" type="button"><span aria-hidden="true">⚙️</span>Ajustes</button>
-</nav>
-
-  <dialog id="transactionDialog" class="dialog" aria-labelledby="transactionDialogTitle">
+  <!-- ============================ MODAL: NOVO LANÇAMENTO (inspirada em "nova_transacao" do ZIP) ============================ -->
+  <div class="dialog-overlay" id="txOverlay"></div>
+  <dialog class="dialog" id="transactionDialog" aria-labelledby="transactionDialogTitle">
     <form method="dialog" class="dialog-card" id="transactionForm">
-      <div class="dialog-head"><div><h2 id="transactionDialogTitle">Nova transação</h2><p>Preencha os dados do lançamento.</p></div><button class="icon-btn" value="cancel" aria-label="Fechar">×</button></div>
-      <input type="hidden" id="transactionId" />
-      <div class="segmented"><button type="button" data-tx-type="expense" class="active expense-tab">Saída</button><button type="button" data-tx-type="income" class="income-tab">Entrada</button></div>
-      <div class="form-grid">
-        <div class="field"><label for="txAccount">Conta</label><select class="input" id="txAccount" required></select></div>
-        <div class="field"><label for="txCurrency">Moeda</label><select class="input" id="txCurrency" required><option value="PYG">Guarani (PYG)</option><option value="BRL">Real (BRL)</option></select></div>
-        <div class="field"><label for="txAmount">Valor</label><input class="input" id="txAmount" inputmode="decimal" placeholder="83.467 ou 22,50" required /></div>
-        <div class="field"><label for="txCategory">Categoria</label><select class="input" id="txCategory" required></select></div>
-        <div class="field"><label for="txDate">Data</label><input class="input" id="txDate" type="date" required /></div>
-        <div class="field"><label for="txStatus">Status</label><select class="input" id="txStatus"><option value="pending">Pendente</option><option value="cleared" selected>Conferida</option><option value="reconciled">Conciliada</option></select></div>
+      <div class="dialog-head">
+        <div>
+          <h2 id="transactionDialogTitle" class="text-headline-sm text-on-surface font-bold">Novo lançamento</h2>
+          <p class="text-body-sm text-on-surface-variant">Preencha os dados do lançamento.</p>
+        </div>
+        <button class="icon-btn" value="cancel" aria-label="Fechar">×</button>
       </div>
-      <div class="field"><label for="txDescription">Descrição</label><input class="input" id="txDescription" maxlength="160" placeholder="Ex.: Maxi, gasolina, salário..." /></div>
-      <div class="field"><label for="txTags">Tags</label><input class="input" id="txTags" maxlength="240" placeholder="Ex.: trabalho, casa, viagem" /></div>
-      <div class="dialog-actions"><button class="btn btn-secondary" value="cancel">Cancelar</button><button class="btn btn-primary" id="saveTransactionBtn" value="default">Salvar</button></div>
+
+      <div class="dialog-body">
+        <!-- Movement Type Pill Selector -->
+        <div class="w-full bg-surface-container-lowest p-1 rounded-xl shadow-inner flex items-center justify-between gap-1 mb-md">
+          <button class="flex-1 py-2.5 px-3 rounded-lg font-label-md text-label-md transition-all duration-200 flex items-center justify-center gap-1.5 bg-error text-on-error shadow-sm" id="type-expense" type="button">
+            <span class="material-symbols-outlined text-[18px]">arrow_downward</span>
+            <span>Despesa</span>
+          </button>
+          <button class="flex-1 py-2.5 px-3 rounded-lg font-label-md text-label-md transition-all duration-200 flex items-center justify-center gap-1.5 text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high" id="type-income" type="button">
+            <span class="material-symbols-outlined text-[18px]">arrow_upward</span>
+            <span>Receita</span>
+          </button>
+          <button class="flex-1 py-2.5 px-3 rounded-lg font-label-md text-label-md transition-all duration-200 flex items-center justify-center gap-1.5 text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high" id="type-transfer" type="button">
+            <span class="material-symbols-outlined text-[18px]">sync_alt</span>
+            <span>Transferência</span>
+          </button>
+        </div>
+
+        <input type="hidden" id="transactionId" />
+
+        <!-- Big Numerical Input & Dual Currency Matrix -->
+        <div class="w-full bg-surface-container p-md rounded-xl shadow-md flex flex-col gap-sm relative overflow-hidden mb-md">
+          <div class="absolute -top-12 -right-12 w-32 h-32 rounded-full bg-primary/10 blur-[64px] pointer-events-none" id="currency-glow"></div>
+          <div class="flex items-center justify-between">
+            <span class="text-label-sm text-on-surface-variant uppercase tracking-wider">Valor do Lançamento</span>
+            <div class="flex items-center bg-surface-container-lowest p-1 rounded-full">
+              <button class="flex items-center gap-1 px-2.5 py-1 rounded-full font-label-sm text-label-sm transition-all duration-150 bg-secondary-container text-on-secondary-container shadow-sm" id="btn-currency-brl" type="button">
+                <span>🇧🇷</span><span>BRL</span>
+              </button>
+              <button class="flex items-center gap-1 px-2.5 py-1 rounded-full font-label-sm text-label-sm transition-all duration-150 text-on-surface-variant hover:text-on-surface" id="btn-currency-pyg" type="button">
+                <span>🇵🇾</span><span>PYG</span>
+              </button>
+            </div>
+          </div>
+          <div class="flex items-baseline gap-2 pt-1 pb-0.5">
+            <span class="text-currency-display text-error font-mono" id="currency-symbol">R$</span>
+            <input class="w-full bg-transparent text-headline-xl text-on-surface focus:outline-none tracking-tight placeholder-outline-variant caret-primary" id="txAmount" inputmode="decimal" placeholder="0,00" type="text" />
+          </div>
+          <div class="flex items-center gap-2 pt-1">
+            <div class="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-surface-container-high text-on-surface-variant font-currency-tabular text-body-sm">
+              <span class="material-symbols-outlined text-[14px] text-tertiary">swap_horiz</span>
+              <span id="preview-text">≈ ₲ 0 na cotação 1.300</span>
+            </div>
+            <span class="text-[11px] text-outline font-label-sm">Taxa Oficial Fronteira</span>
+          </div>
+        </div>
+
+        <!-- Origin / Account Selector -->
+        <div class="flex flex-col gap-2 mb-md">
+          <div class="flex items-center justify-between">
+            <label class="text-label-md text-on-surface">Conta de Débito / Crédito</label>
+            <span class="text-label-sm text-primary flex items-center gap-0.5 cursor-pointer hover:underline">
+              <span class="material-symbols-outlined text-[14px]">account_balance_wallet</span> Gerenciar
+            </span>
+          </div>
+          <div class="flex items-center gap-2 overflow-x-auto pb-1 -mx-4 px-4 no-scrollbar" id="accountChips">
+            <!-- Contas injetadas pelo JS como chips -->
+          </div>
+        </div>
+
+        <!-- Categories Grid -->
+        <div class="flex flex-col gap-2 mb-md">
+          <div class="flex items-center justify-between">
+            <label class="text-label-md text-on-surface">Categoria</label>
+            <span class="text-label-sm text-on-surface-variant" id="categoryCount">6 disponíveis</span>
+          </div>
+          <div class="grid grid-cols-3 gap-2.5" id="categoryGrid">
+            <!-- Categorias injetadas pelo JS -->
+          </div>
+        </div>
+
+        <!-- Additional Meta Fields -->
+        <div class="flex flex-col gap-md bg-surface-container p-md rounded-xl shadow-sm">
+          <!-- Description -->
+          <div class="flex flex-col gap-xs">
+            <label class="text-label-sm text-on-surface-variant">Descrição / Nota</label>
+            <div class="flex items-center gap-2 bg-surface-container-lowest px-3 py-2.5 rounded-lg text-on-surface focus-within:ring-1 focus-within:ring-primary">
+              <span class="material-symbols-outlined text-[18px] text-outline">edit_note</span>
+              <input class="bg-transparent text-body-md font-body-md w-full focus:outline-none placeholder-outline-variant text-on-surface" id="txDescription" type="text" placeholder="Ex.: Almoço em Foz do Iguaçu" maxlength="160" />
+            </div>
+          </div>
+
+          <!-- Date & Time Row -->
+          <div class="flex items-center justify-between gap-2 pt-1">
+            <div class="flex-1 flex flex-col gap-xs">
+              <span class="text-label-sm text-on-surface-variant">Data &amp; Hora</span>
+              <div class="flex items-center gap-2 bg-surface-container-lowest px-3 py-2.5 rounded-lg text-on-surface">
+                <span class="material-symbols-outlined text-[18px] text-primary">calendar_today</span>
+                <span class="text-body-md font-body-md" id="txDateDisplay">Hoje</span>
+                <input class="input hidden" id="txDate" type="date" />
+              </div>
+            </div>
+            <div class="flex flex-col gap-xs w-28">
+              <span class="text-label-sm text-on-surface-variant">Horário</span>
+              <div class="flex items-center justify-center gap-1 bg-surface-container-lowest px-2 py-2.5 rounded-lg text-on-surface">
+                <span class="material-symbols-outlined text-[16px] text-outline">schedule</span>
+                <span class="text-body-md font-body-md font-mono" id="txTimeDisplay">13:42</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Tags -->
+          <div class="flex flex-col gap-xs pt-1">
+            <label class="text-label-sm text-on-surface-variant">Tags de Contexto</label>
+            <div class="flex flex-wrap items-center gap-1.5" id="txTagsContainer">
+              <!-- Tags injetadas pelo JS -->
+              <button class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-surface-container-lowest hover:bg-surface-container-highest text-on-surface-variant font-label-sm text-label-sm transition-colors" type="button">
+                <span class="material-symbols-outlined text-[14px]">add</span><span>Nova Tag</span>
+              </button>
+            </div>
+            <input class="hidden" id="txTags" />
+          </div>
+
+          <!-- Recurring Toggle Switch -->
+          <div class="flex items-center justify-between pt-2 border-t border-surface-container-highest/60">
+            <div class="flex items-center gap-2.5">
+              <div class="w-8 h-8 rounded-lg bg-surface-container-lowest flex items-center justify-center text-on-surface-variant">
+                <span class="material-symbols-outlined text-[18px]">update</span>
+              </div>
+              <div class="flex flex-col">
+                <span class="text-label-md text-on-surface">Lançamento recorrente</span>
+                <span class="text-body-sm text-on-surface-variant">Repetir automaticamente</span>
+              </div>
+            </div>
+            <button class="w-12 h-6 flex items-center rounded-full p-1 bg-surface-container-lowest transition-colors duration-200 focus:outline-none" id="toggleRecurringBtn" type="button" aria-label="Toggle recorrente">
+              <div class="toggle-dot w-4 h-4 rounded-full bg-outline-variant shadow-md transform transition-transform duration-200"></div>
+            </button>
+          </div>
+        </div>
+
+        <input type="hidden" id="txStatus" value="cleared" />
+        <input type="hidden" id="txCurrency" value="BRL" />
+        <input type="hidden" id="txAccount" value="" />
+        <input type="hidden" id="txType" value="expense" />
+        <input type="hidden" id="recurring" value="false" />
+      </div>
+
+      <div class="dialog-actions">
+        <button class="btn btn-secondary" value="cancel">Cancelar</button>
+        <button class="btn btn-primary" id="saveTransactionBtn" value="default">Salvar Transação</button>
+      </div>
     </form>
   </dialog>
 
-  <dialog id="smartImportDialog" class="dialog" aria-labelledby="smartImportTitle">
-    <form method="dialog" class="dialog-card large">
-      <div class="dialog-head"><div><h2 id="smartImportTitle">Importação rápida</h2><p>Cole anotações brutas e revise as sugestões.</p></div><button class="icon-btn" value="cancel" aria-label="Fechar">×</button></div>
-      <div class="inline-form"><select class="input compact" id="smartDefaultCurrency"><option value="PYG">Gs.</option><option value="BRL">R$</option></select><span class="muted">Moeda padrão para linhas sem identificação.</span></div>
-      <textarea id="smartInput" class="input textarea" maxlength="12000" placeholder="-83.467 mercado\n-69.598 mercado\n-90.000 almoço\n\nRecebi 420 reais\n-100 gasolina"></textarea>
-      <div id="smartSuggestions" class="smart-suggestions"></div>
-      <div class="dialog-actions"><button class="btn btn-secondary" value="cancel">Fechar</button><button class="btn btn-primary" id="importSmartBtn" type="button">Importar sugestões</button></div>
-    </form>
-  </dialog>
-
+  <!-- Toast -->
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
 </body>
 </html>

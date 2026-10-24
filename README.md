@@ -2,6 +2,23 @@
 
 Aplicação web de gestão financeira pessoal multi-moeda, local-first, construída com HTML, CSS e JavaScript ES Modules. O projeto funciona sem backend obrigatório, persiste dados em IndexedDB e é compatível com GitHub Pages/PWA.
 
+## Versão 2 — Design System "Fronteira Finance"
+
+A v2 introduz uma camada de apresentação totalmente renovada, baseada no design system **Fronteira Finance** (dark slate, tipografia Plus Jakarta Sans + JetBrains Mono, moedas BRL/PYG, componentes borderless com profundidade tonal) e nas telas de referência do pacote `stitch_personal_finance_app_screens`.
+
+### Melhorias de UI/UX (v2)
+
+  * **Novo design system** em `css/design-system.css`: hierarquia de superfícies slate, paleta funcional, tipografia numérica tabular sem jitter, identidade visual para BRL (esmeralda) e PYG (carmim).
+  * **Dashboard moderno**: patrimônio consolidado com toggle de saldo, widget de câmbio Foz/CDE com simulador, resumo mensal, carrossel de contas e transações recentes com filtro por moeda.
+  * **Novo lançamento**: tipo (despesa/receita/transferência) em pílulas, câmbio dual instantâneo BRL↔PYG, conta em chips, grid de categorias, tags, recorrência e toast "Offline First".
+  * **Gestão patrimonial**: balanço ativos/passivos, ações rápidas, histórico de transferências atômicas, exportação JSON/CSV.
+  * **Orçamentos & metas**: saúde financeira radial, tetos por categoria com barras de progresso, metas de economia e insight de paridade de compra.
+  * **Assistente IA**: insights determinísticos, chat motor local 100% offline, chips de sugestão, conversor BRL/PYG.
+  * **Navegação bottom-bar** móvel com FAB de novo lançamento.
+
+Toda a lógica de negócio, motor financeiro, persistência IndexedDB, autenticação local e assistente IA permanecem inalterados e cobertos por testes.
+
+
 ## Stack
 
 - HTML5
