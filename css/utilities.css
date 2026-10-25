@@ -1,0 +1,235 @@
+/* ==========================================================================
+   Fronteira Finance — Utilities (v2)
+   Classes utilitárias usadas pelo index.html e js/app.js.
+   O ZIP original usava Tailwind CDN; aqui reproduzimos apenas as utilidades
+   necessárias, com os tokens do design-system (sem dependência externa).
+   Carregar APÓS design-system.css para que os utilitários vençam os estilos
+   de componente quando houver conflito pontual.
+   ========================================================================== */
+
+/* ── Espaçamento: gap ── */
+.gap-0 { gap: 0; }
+.gap-0\.5 { gap: 2px; }
+.gap-1 { gap: 4px; }
+.gap-1\.5 { gap: 6px; }
+.gap-2 { gap: 8px; }
+.gap-2\.5 { gap: 10px; }
+.gap-3 { gap: 12px; }
+
+/* ── Espaçamento: padding ── */
+.p-0\.5 { padding: 2px; }
+.p-1 { padding: 4px; }
+.p-3 { padding: 12px; }
+
+.px-1 { padding-left: 4px; padding-right: 4px; }
+.px-1\.5 { padding-left: 6px; padding-right: 6px; }
+.px-2 { padding-left: 8px; padding-right: 8px; }
+.px-2\.5 { padding-left: 10px; padding-right: 10px; }
+.px-3 { padding-left: 12px; padding-right: 12px; }
+.px-4 { padding-left: 16px; padding-right: 16px; }
+.px-xs { padding-left: var(--ds-space-xs); padding-right: var(--ds-space-xs); }
+
+.py-0\.5 { padding-top: 2px; padding-bottom: 2px; }
+.py-1 { padding-top: 4px; padding-bottom: 4px; }
+.py-1\.5 { padding-top: 6px; padding-bottom: 6px; }
+.py-2 { padding-top: 8px; padding-bottom: 8px; }
+.py-2\.5 { padding-top: 10px; padding-bottom: 10px; }
+
+.pb-0\.5 { padding-bottom: 2px; }
+.pb-1 { padding-bottom: 4px; }
+.pb-32 { padding-bottom: 8rem; }
+.pt-1 { padding-top: 4px; }
+.pt-2 { padding-top: 8px; }
+
+/* ── Espaçamento: margin ── */
+.mb-1 { margin-bottom: 4px; }
+.mt-0\.5 { margin-top: 2px; }
+.mt-3 { margin-top: 12px; }
+.ml-1 { margin-left: 4px; }
+.-mt-4 { margin-top: -16px; }
+.-mx-4 { margin-left: -16px; margin-right: -16px; }
+
+/* ── Posições relativas (blobs de glow) ── */
+.-top-10 { top: -2.5rem; }
+.-top-12 { top: -3rem; }
+.-right-10 { right: -2.5rem; }
+.-right-12 { right: -3rem; }
+.-left-12 { left: -3rem; }
+.-bottom-12 { bottom: -3rem; }
+
+/* ── Tamanhos ── */
+.w-2 { width: 8px; }
+.w-4 { width: 16px; }
+.w-6 { width: 24px; }
+.h-4 { height: 16px; }
+.h-32 { height: 128px; }
+.h-40 { height: 160px; }
+.h-44 { height: 176px; }
+
+/* ── Tipografia ── */
+.text-xs { font-size: 12px; line-height: 1.4; }
+.text-\[10px\] { font-size: 10px; }
+.text-\[11px\] { font-size: 11px; }
+.text-\[14px\] { font-size: 14px; }
+.text-\[15px\] { font-size: 15px; }
+.text-\[16px\] { font-size: 16px; }
+.text-\[18px\] { font-size: 18px; }
+.text-\[20px\] { font-size: 20px; }
+.text-left { text-align: left; }
+.text-center { text-align: center; }
+.text-right { text-align: right; }
+.nowrap { white-space: nowrap; }
+.leading-none { line-height: 1; }
+
+.font-bold { font-weight: 700; }
+.font-semibold { font-weight: 600; }
+.font-medium { font-weight: 500; }
+
+.font-body-sm { font-family: var(--ds-font-sans); font-size: 12px; line-height: 16px; font-weight: 400; }
+.font-body-md { font-family: var(--ds-font-sans); font-size: 14px; line-height: 20px; font-weight: 400; }
+.font-label-sm { font-family: var(--ds-font-sans); font-size: 11px; line-height: 14px; font-weight: 600; letter-spacing: 0.04em; }
+.font-label-md { font-family: var(--ds-font-sans); font-size: 13px; line-height: 16px; font-weight: 600; letter-spacing: 0.01em; }
+.font-currency-tabular { font-family: var(--ds-font-mono); font-feature-settings: "tnum" 1, "zero" 1; }
+
+.text-currency-display-mobile {
+  font-family: var(--ds-font-mono);
+  font-size: clamp(28px, 8vw, 36px);
+  line-height: 1.15;
+  font-weight: 700;
+  font-feature-settings: "tnum" 1, "zero" 1;
+}
+
+/* ── Cores: superfícies sólidas ── */
+.bg-primary { background-color: var(--ds-primary); }
+.bg-primary-container { background-color: var(--ds-primary-container); }
+.bg-secondary { background-color: var(--ds-secondary); }
+.bg-secondary-container { background-color: var(--ds-secondary-container); }
+.bg-tertiary-container { background-color: var(--ds-tertiary-container); }
+.bg-error { background-color: var(--ds-error); }
+.bg-error-container { background-color: var(--ds-error-container); }
+.bg-outline-variant { background-color: var(--ds-outline-variant); }
+.bg-transparent { background-color: transparent; }
+
+/* ── Cores: variantes com opacidade (equivalentes a bg-x/10) ── */
+.bg-primary\/10 { background-color: rgba(173, 198, 255, 0.1); }
+.bg-primary\/20 { background-color: rgba(173, 198, 255, 0.2); }
+.bg-secondary\/10 { background-color: rgba(78, 222, 163, 0.1); }
+.bg-secondary\/15 { background-color: rgba(78, 222, 163, 0.15); }
+.bg-secondary\/20 { background-color: rgba(78, 222, 163, 0.2); }
+.bg-error\/15 { background-color: rgba(255, 180, 171, 0.15); }
+.bg-primary-container\/20 { background-color: rgba(77, 142, 255, 0.2); }
+.bg-secondary-container\/20 { background-color: rgba(0, 165, 114, 0.2); }
+.bg-secondary-container\/30 { background-color: rgba(0, 165, 114, 0.3); }
+.bg-surface-container-high\/60 { background-color: rgba(34, 42, 61, 0.6); }
+
+/* ── Cores: texto com opacidade ── */
+.text-on-surface-variant\/70 { color: rgba(194, 198, 214, 0.7); }
+.text-on-surface-variant\/80 { color: rgba(194, 198, 214, 0.8); }
+.text-secondary\/70 { color: rgba(78, 222, 163, 0.7); }
+
+/* ── Cores: outline ── */
+.text-outline { color: var(--ds-outline); }
+.text-outline-variant { color: var(--ds-outline-variant); }
+
+/* ── Bordas ── */
+.border-t { border-top: 1px solid var(--ds-surface-container-highest); }
+.border-surface-container-highest\/60 { border-color: rgba(45, 52, 73, 0.6); }
+
+/* ── Efeitos visuais ── */
+.blur-\[64px\] { filter: blur(64px); }
+.caret-primary { caret-color: var(--ds-primary); }
+.placeholder-outline-variant::placeholder { color: var(--ds-outline-variant); }
+.pointer-events-none { pointer-events: none; }
+.cursor-pointer { cursor: pointer; }
+.animate-pulse { animation: ds-pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite; }
+
+@keyframes ds-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
+}
+
+/* ── Transforms ── */
+.transform { transform: none; }
+.transition-transform { transition-property: transform; transition-duration: 0.2s; transition-timing-function: ease; }
+.translate-x-6 { transform: translateX(1.5rem); }
+
+/* ── Scroll snap (carrossel de contas) ── */
+.snap-x { scroll-snap-type: x var(--ds-scroll-snap, mandatory); }
+.snap-mandatory { scroll-snap-type: x mandatory; }
+.snap-start { scroll-snap-align: start; }
+
+/* ── Alinhamento flex ── */
+.items-baseline { align-items: baseline; }
+.justify-around { justify-content: space-around; }
+.flex-shrink-0 { flex-shrink: 0; }
+
+/* ── Variantes de estado ── */
+.hover\:bg-surface-bright:hover { background-color: var(--ds-surface-bright); }
+.hover\:bg-surface-container-high:hover { background-color: var(--ds-surface-container-high); }
+.hover\:bg-surface-container-highest:hover { background-color: var(--ds-surface-container-highest); }
+.hover\:text-on-surface:hover { color: var(--ds-on-surface); }
+.hover\:underline:hover { text-decoration: underline; }
+.focus\:outline-none:focus { outline: none; }
+.focus-within\:ring-1:focus-within { box-shadow: 0 0 0 1px rgba(173, 198, 255, 0.5); }
+.focus-within\:ring-primary:focus-within { box-shadow: 0 0 0 1px var(--ds-primary); }
+
+/* ── Ícones Material Symbols: base garantida mesmo sem CDN de classe ── */
+.material-symbols-outlined {
+  font-family: "Material Symbols Outlined";
+  font-weight: normal;
+  font-style: normal;
+  display: inline-block;
+  line-height: 1;
+  text-transform: none;
+  letter-spacing: normal;
+  word-wrap: normal;
+  white-space: nowrap;
+  direction: ltr;
+  font-size: 24px;
+  -webkit-font-feature-settings: "liga";
+  font-feature-settings: "liga";
+}
+
+/* ── Componentes de apoio usados pelo JS ── */
+.filter-btn {
+  border: 0;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background-color 0.18s ease, color 0.18s ease, box-shadow 0.18s ease;
+}
+
+.toggle-dot { display: block; }
+
+.tx-item {
+  cursor: default;
+  transition: background-color 0.18s ease, transform 0.18s ease;
+}
+
+.tx-item:hover { transform: translateY(-1px); }
+
+.category-card {
+  border: 0;
+  width: 100%;
+  cursor: pointer;
+}
+
+/* Linhas de transação do dashboard e da lista completa */
+.transaction-row { transition: background-color 0.18s ease; }
+.transaction-row:hover { background-color: var(--ds-surface-container-high); }
+
+/* Rodapé informativo injetado por ui-behavior.js */
+.app-info-footer {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 14px 16px 22px;
+  color: var(--ds-outline);
+  font-family: var(--ds-font-sans);
+  font-size: 11px;
+  line-height: 1.5;
+  text-align: center;
+}
+
+/* Body com bottom-nav fixa (compact desktop) */
+body.has-bottom-nav { padding-bottom: 0; }

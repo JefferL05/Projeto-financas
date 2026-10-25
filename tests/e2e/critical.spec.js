@@ -41,10 +41,10 @@ async function waitForApp(page) {
 async function createBRLTransaction(page, { amount = "25,00", description = "Teste E2E", category = "Mercado" } = {}) {
   await page.locator("#newTransactionBtn").click();
   await expect(page.locator("#transactionDialog")).toBeVisible();
-  await page.locator("#txCurrency").selectOption("BRL");
-  await page.locator("#txAccount").selectOption("account-wallet-brl");
+  await page.locator("#btn-currency-brl").click();
+  await page.locator('[data-account-id="account-wallet-brl"]').click();
   await page.locator("#txAmount").fill(amount);
-  await page.locator("#txCategory").selectOption({ label: category });
+  await page.locator(`.category-card[data-category="${category}"]`).click();
   await page.locator("#txDescription").fill(description);
   await page.locator("#saveTransactionBtn").click();
   await expect(page.locator("#transactionDialog")).not.toBeVisible();
@@ -100,12 +100,10 @@ test("E2E 4 — cartão aumenta dívida e pagamento reduz", async ({ page }) => 
   await openProtected(page, "/index.html");
   await page.locator("#newTransactionBtn").click();
   await page.locator("[data-tx-type='expense']").click();
-  await page.locator("#txCurrency").selectOption("BRL");
-  const cardOption = page.locator("#txAccount option").filter({ hasText: "Cartão Teste" }).first();
-  const cardId = await cardOption.getAttribute("value");
-  await page.locator("#txAccount").selectOption(cardId);
+  await page.locator("#btn-currency-brl").click();
+  await page.locator("#accountChips button").filter({ hasText: "Cartão Teste" }).first().click();
   await page.locator("#txAmount").fill("200");
-  await page.locator("#txCategory").selectOption({ label: "Compras" });
+  await page.locator('.category-card[data-category="Compras"]').click();
   await page.locator("#saveTransactionBtn").click();
   await expect(page.locator("#transactionDialog")).not.toBeVisible();
 
@@ -114,6 +112,8 @@ test("E2E 4 — cartão aumenta dívida e pagamento reduz", async ({ page }) => 
 
   await page.locator('[data-tab="transfer"]').click();
   await page.locator("#transferSource").selectOption("account-wallet-brl");
+  const cardOption = page.locator("#transferDestination option").filter({ hasText: "Cartão Teste" }).first();
+  const cardId = await cardOption.getAttribute("value");
   await page.locator("#transferDestination").selectOption(cardId);
   await page.locator("#transferSourceAmount").fill("300");
   await page.locator("#transferDestinationAmount").fill("300");

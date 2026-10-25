@@ -5,13 +5,17 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
   <meta name="theme-color" content="#0b1326" />
   <meta name="description" content="Gestão financeira pessoal multi-moeda em PYG e BRL, local-first, offline-first e PWA." />
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://cdn.jsdelivr.net https://cdn.tailwindcss.com https://fonts.googleapis.com https://fonts.gstatic.com; style-src 'self' https://fonts.googleapis.com 'unsafe-inline'; img-src 'self' data: https:; connect-src 'self' https://economia.awesomeapi.com.br; object-src 'none'; base-uri 'self'; frame-ancestors 'none'; form-action 'self';" />
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://cdn.jsdelivr.net https://cdn.tailwindcss.com https://fonts.googleapis.com https://fonts.gstatic.com; style-src 'self' https://fonts.googleapis.com 'unsafe-inline'; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data: https:; connect-src 'self' https://economia.awesomeapi.com.br; object-src 'none'; base-uri 'self'; frame-ancestors 'none'; form-action 'self';" />
   <title>Projeto Finanças | Brasil & Paraguai</title>
 
   <link rel="manifest" href="manifest.json" />
-  <link rel="stylesheet" href="css/design-system.css" />
+  <!-- 1) base legada (layout de views, grid, formulários) → 2) design system v2
+       → 3) utilitários Tailwind usados pelo markup. A ordem garante que o
+       design system sobrescreva os estilos genéricos da base legada. -->
   <link rel="stylesheet" href="css/styles.css" />
   <link rel="stylesheet" href="css/v2.css" />
+  <link rel="stylesheet" href="css/design-system.css" />
+  <link rel="stylesheet" href="css/utilities.css" />
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js" defer></script>
 
   <script type="module" src="js/ui-behavior.js"></script>
@@ -22,27 +26,47 @@
   <!-- ============================ APP SHELL ============================ -->
   <div class="app-shell">
 
-    <!-- Topbar (desktop) / Header (mobile) -->
-    <header class="topbar">
-      <div class="flex items-center justify-between">
-        <div class="flex items-center gap-2">
-          <div class="w-8 h-8 rounded-lg bg-primary-container text-on-primary-container flex items-center justify-center text-[18px] font-bold">🇵🇾🇧🇷</div>
-          <div>
-            <p class="eyebrow text-xs uppercase tracking-wider text-on-surface-variant font-semibold">Projeto Finanças</p>
-            <h1 id="pageTitle" class="text-headline-lg text-on-surface font-bold">Dashboard</h1>
-          </div>
-        </div>
-
-        <div class="topbar-actions flex items-center gap-2 flex-wrap">
-          <button class="btn btn-ghost px-3" id="themeToggleBtn" type="button" aria-label="Ativar tema claro" aria-pressed="false">☀️</button>
-          <button class="btn btn-surface px-3" id="quickImportBtn" type="button">Importação rápida</button>
-          <button class="btn btn-primary px-4" id="newTransactionBtn" type="button">+ Novo lançamento</button>
-        </div>
+    <!-- Sidebar (desktop) — reúne todas as views, inclusive Analytics e Dados -->
+    <aside class="sidebar">
+      <div class="brand">
+        <div class="brand-mark">🇵🇾🇧🇷</div>
+        <div><strong>Projeto Finanças</strong><small>Brasil &amp; Paraguai</small></div>
       </div>
-    </header>
+      <nav class="nav" aria-label="Navegação lateral">
+        <button class="nav-link active" data-view="dashboard" aria-current="page" type="button">Dashboard</button>
+        <button class="nav-link" data-view="transactions" type="button">Transações</button>
+        <button class="nav-link" data-view="analytics" type="button">Analytics</button>
+        <button class="nav-link" data-view="data" type="button">Dados &amp; Backup</button>
+        <button class="nav-link" data-view="settings" type="button">Configurações</button>
+        <a class="nav-link nav-anchor" href="gestao.html">🏦 Contas &amp; Planejamento</a>
+        <a class="nav-link nav-anchor" href="gestao-financeira.html">🧭 Gestão Financeira</a>
+        <a class="nav-link nav-anchor" href="diagnostico.html">🧠 Inteligência financeira</a>
+        <a class="nav-link nav-anchor" href="inteligencia.html#ia">🤖 Assistente IA</a>
+      </nav>
+      <div class="sidebar-footer"><span>Local-first · Offline</span><span>v2.0</span></div>
+    </aside>
 
     <!-- ============================ MAIN CONTENT (views) ============================ -->
-    <main class="main pb-32 px-4">
+    <main class="main">
+
+      <!-- Topbar (desktop) / Header (mobile) -->
+      <header class="topbar">
+        <div class="flex w-full items-center justify-between">
+          <div class="flex items-center gap-2">
+            <div class="w-8 h-8 rounded-lg bg-primary-container text-on-primary-container flex items-center justify-center text-[18px] font-bold">🇵🇾🇧🇷</div>
+            <div>
+              <p class="eyebrow text-xs uppercase tracking-wider text-on-surface-variant font-semibold">Projeto Finanças</p>
+              <h1 id="pageTitle" class="text-headline-lg text-on-surface font-bold">Dashboard</h1>
+            </div>
+          </div>
+
+          <div class="topbar-actions flex items-center gap-2 flex-wrap">
+            <button class="btn btn-ghost px-3" id="themeToggleBtn" type="button" aria-label="Ativar tema claro" aria-pressed="false">☀️</button>
+            <button class="btn btn-surface px-3" id="quickImportBtn" type="button">Importação rápida</button>
+            <button class="btn btn-primary px-4" id="newTransactionBtn" type="button">+ Novo lançamento</button>
+          </div>
+        </div>
+      </header>
 
       <!-- VIEW: DASHBOARD (inspirada na tela "dashboard_visao_geral" do ZIP) -->
       <section class="view active" id="view-dashboard">
@@ -163,6 +187,50 @@
               <span class="text-body-sm text-on-surface-variant/80 mt-0.5" id="monthExpenseCount">0 lançamentos</span>
             </div>
           </div>
+
+          <!-- Movimentação por moeda -->
+          <div class="grid grid-cols-2 gap-sm">
+            <article class="card metric-card p-sm">
+              <span>Movimentação em Guaranis <span class="nowrap">🇵🇾</span></span>
+              <strong class="text-currency-tabular" id="pygBalance">Gs. 0</strong>
+              <div class="metric-row"><small class="income" id="pygIncome">+ Gs. 0</small><small class="expense" id="pygExpense">- Gs. 0</small></div>
+            </article>
+            <article class="card metric-card p-sm">
+              <span>Movimentação em Reais <span class="nowrap">🇧🇷</span></span>
+              <strong class="text-currency-tabular" id="brlBalance">R$ 0,00</strong>
+              <div class="metric-row"><small class="income" id="brlIncome">+ R$ 0,00</small><small class="expense" id="brlExpense">- R$ 0,00</small></div>
+            </article>
+          </div>
+        </section>
+
+        <!-- 3b. Indicadores consolidados -->
+        <section class="flex flex-col gap-xs mb-md">
+          <div class="flex items-center justify-between px-1">
+            <h2 class="text-headline-sm text-on-surface">Indicadores</h2>
+            <span class="text-label-sm text-on-surface-variant" id="rateStatus">Receitas menos despesas do mês</span>
+          </div>
+          <div class="summary-grid dashboard-summary-grid">
+            <article class="card metric-card">
+              <span>Patrimônio líquido</span>
+              <strong id="netWorthBalance">—</strong>
+              <small class="muted">Ativos menos dívidas</small>
+            </article>
+            <article class="card metric-card">
+              <span>Dinheiro disponível</span>
+              <strong id="availableBalance">—</strong>
+              <small class="muted">Contas líquidas no orçamento</small>
+            </article>
+            <article class="card metric-card">
+              <span>Fluxo líquido do mês</span>
+              <strong id="consolidatedBalance">—</strong>
+              <small class="muted">Saldo de entradas e saídas</small>
+            </article>
+            <article class="card metric-card">
+              <span>Gasto médio diário</span>
+              <strong id="dailyAverage">—</strong>
+              <small class="muted" id="projectionText">Projeção mensal indisponível</small>
+            </article>
+          </div>
         </section>
 
         <!-- 4. Acesso Rápido a Contas (Carrossel Horizontal com Snap) -->
@@ -190,6 +258,18 @@
             <!-- Transações injetadas pelo JS -->
           </div>
         </section>
+
+        <!-- 6. Gráficos do dashboard -->
+        <div class="chart-grid">
+          <article class="card">
+            <div class="card-head"><div><h2 class="text-headline-sm text-on-surface">Fluxo de caixa</h2><p class="text-body-sm text-on-surface-variant">Entradas e saídas dos últimos 6 meses</p></div></div>
+            <div class="chart-wrap"><canvas id="cashflowChart"></canvas></div>
+          </article>
+          <article class="card">
+            <div class="card-head"><div><h2 class="text-headline-sm text-on-surface">Gastos por categoria</h2><p class="text-body-sm text-on-surface-variant">Distribuição do mês atual</p></div></div>
+            <div class="chart-wrap"><canvas id="categoryChart"></canvas></div>
+          </article>
+        </div>
 
         <!-- Tag de Status Local-First -->
         <footer class="mt-md flex items-center justify-center">
@@ -271,7 +351,6 @@
   </div>
 
   <!-- ============================ MODAL: NOVO LANÇAMENTO (inspirada em "nova_transacao" do ZIP) ============================ -->
-  <div class="dialog-overlay" id="txOverlay"></div>
   <dialog class="dialog" id="transactionDialog" aria-labelledby="transactionDialogTitle">
     <form method="dialog" class="dialog-card" id="transactionForm">
       <div class="dialog-head">
@@ -285,15 +364,15 @@
       <div class="dialog-body">
         <!-- Movement Type Pill Selector -->
         <div class="w-full bg-surface-container-lowest p-1 rounded-xl shadow-inner flex items-center justify-between gap-1 mb-md">
-          <button class="flex-1 py-2.5 px-3 rounded-lg font-label-md text-label-md transition-all duration-200 flex items-center justify-center gap-1.5 bg-error text-on-error shadow-sm" id="type-expense" type="button">
+          <button class="flex-1 py-2.5 px-3 rounded-lg font-label-md text-label-md transition-all duration-200 flex items-center justify-center gap-1.5 bg-error text-on-error shadow-sm" id="type-expense" data-tx-type="expense" type="button">
             <span class="material-symbols-outlined text-[18px]">arrow_downward</span>
             <span>Despesa</span>
           </button>
-          <button class="flex-1 py-2.5 px-3 rounded-lg font-label-md text-label-md transition-all duration-200 flex items-center justify-center gap-1.5 text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high" id="type-income" type="button">
+          <button class="flex-1 py-2.5 px-3 rounded-lg font-label-md text-label-md transition-all duration-200 flex items-center justify-center gap-1.5 text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high" id="type-income" data-tx-type="income" type="button">
             <span class="material-symbols-outlined text-[18px]">arrow_upward</span>
             <span>Receita</span>
           </button>
-          <button class="flex-1 py-2.5 px-3 rounded-lg font-label-md text-label-md transition-all duration-200 flex items-center justify-center gap-1.5 text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high" id="type-transfer" type="button">
+          <button class="flex-1 py-2.5 px-3 rounded-lg font-label-md text-label-md transition-all duration-200 flex items-center justify-center gap-1.5 text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high" id="type-transfer" data-tx-type="transfer" type="button">
             <span class="material-symbols-outlined text-[18px]">sync_alt</span>
             <span>Transferência</span>
           </button>
@@ -416,11 +495,41 @@
         <input type="hidden" id="txAccount" value="" />
         <input type="hidden" id="txType" value="expense" />
         <input type="hidden" id="recurring" value="false" />
+        <!-- Estado da categoria: a escolha visual acontece no grid acima -->
+        <select class="hidden" id="txCategory" aria-label="Categoria selecionada" tabindex="-1"></select>
       </div>
 
       <div class="dialog-actions">
         <button class="btn btn-secondary" value="cancel">Cancelar</button>
         <button class="btn btn-primary" id="saveTransactionBtn" value="default">Salvar Transação</button>
+      </div>
+    </form>
+  </dialog>
+
+  <!-- ============================ MODAL: IMPORTAÇÃO RÁPIDA ============================ -->
+  <dialog class="dialog" id="smartImportDialog" aria-labelledby="smartImportTitle">
+    <form method="dialog" class="dialog-card large">
+      <div class="dialog-head">
+        <div>
+          <h2 id="smartImportTitle" class="text-headline-sm text-on-surface font-bold">Importação rápida</h2>
+          <p class="text-body-sm text-on-surface-variant">Cole anotações brutas e revise as sugestões.</p>
+        </div>
+        <button class="icon-btn" value="cancel" aria-label="Fechar">×</button>
+      </div>
+      <div class="dialog-body">
+        <div class="inline-form mb-1">
+          <select class="input compact" id="smartDefaultCurrency" aria-label="Moeda padrão">
+            <option value="PYG">Gs.</option>
+            <option value="BRL">R$</option>
+          </select>
+          <span class="text-body-sm text-on-surface-variant">Moeda padrão para linhas sem identificação.</span>
+        </div>
+        <textarea id="smartInput" class="input textarea" maxlength="12000" placeholder="-83.467 mercado&#10;-69.598 mercado&#10;-90.000 almoço&#10;&#10;Recebi 420 reais&#10;-100 gasolina" aria-label="Anotações para importar"></textarea>
+        <div id="smartSuggestions" class="smart-suggestions"></div>
+      </div>
+      <div class="dialog-actions">
+        <button class="btn btn-secondary" value="cancel">Fechar</button>
+        <button class="btn btn-primary" id="importSmartBtn" type="button">Importar sugestões</button>
       </div>
     </form>
   </dialog>

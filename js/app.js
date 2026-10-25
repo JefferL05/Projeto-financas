@@ -78,7 +78,6 @@ function mapElements() {
   Object.assign(els, {
     pageTitle: $("#pageTitle"),
     transactionDialog: $("#transactionDialog"),
-    txOverlay: $("#txOverlay"),
     transactionForm: $("#transactionForm"),
     transactionId: $("#transactionId"),
     txAccount: $("#txAccount"),
@@ -102,6 +101,7 @@ function mapElements() {
     exchangeRate: $("#exchangeRate"),
     baseCurrency: $("#baseCurrency"),
     toast: $("#toast"),
+    transactionCount: $("#transactionCount"),
 
     // Novo modal (design do ZIP)
     typeExpense: $("#type-expense"),
@@ -144,7 +144,27 @@ function mapElements() {
     accountsCount: $("#accountsCount"),
     txFilterBar: $("#txFilterBar"),
     recentTransactions: $("#recentTransactions"),
-    dbStatus: $("#dbStatus")
+    dbStatus: $("#dbStatus"),
+
+    // Resumo por moeda + indicadores (restaurados da versão anterior)
+    pygBalance: $("#pygBalance"),
+    pygIncome: $("#pygIncome"),
+    pygExpense: $("#pygExpense"),
+    brlBalance: $("#brlBalance"),
+    brlIncome: $("#brlIncome"),
+    brlExpense: $("#brlExpense"),
+    netWorthBalance: $("#netWorthBalance"),
+    availableBalance: $("#availableBalance"),
+    consolidatedBalance: $("#consolidatedBalance"),
+    dailyAverage: $("#dailyAverage"),
+    projectionText: $("#projectionText"),
+    rateStatus: $("#rateStatus"),
+
+    // Analytics
+    topCategory: $("#topCategory"),
+    largestExpense: $("#largestExpense"),
+    savingsRate: $("#savingsRate"),
+    monthProjection: $("#monthProjection")
   });
 }
 
@@ -236,9 +256,6 @@ function bindEvents() {
 
   // Recorrência
   els.toggleRecurringBtn.addEventListener("click", () => toggleRecurring());
-
-  // Fecha modal ao clicar no overlay
-  els.txOverlay.addEventListener("click", () => closeTransactionDialog());
 }
 
 /* ==========================================================================
@@ -357,6 +374,7 @@ function renderAccountChips() {
   nonArchived.forEach((account) => {
     const chip = document.createElement("button");
     chip.type = "button";
+    chip.dataset.accountId = account.id;
     chip.className = "flex-shrink-0 flex items-center gap-2.5 px-3 py-2.5 rounded-xl " +
       (account.id === state.selectedAccountId
         ? "bg-surface-container-highest text-on-surface shadow-sm"
@@ -384,13 +402,19 @@ function renderAccountChips() {
   });
 }
 
+const CATEGORY_CARD_BASE = "category-card p-3 rounded-xl bg-surface-container hover:bg-surface-container-high text-on-surface-variant hover:text-on-surface flex flex-col items-center justify-center gap-1.5 transition-all transform active:scale-95 text-center";
+const CATEGORY_CARD_SELECTED = "category-card p-3 rounded-xl bg-tertiary-container text-on-tertiary-container flex flex-col items-center justify-center gap-1.5 shadow-sm transition-all transform active:scale-95 text-center";
+
 function renderCategoryGrid() {
   const container = els.categoryGrid;
   container.replaceChildren();
   state.categories.forEach((category) => {
+    const selected = category.name === els.txCategory.value;
     const btn = document.createElement("button");
     btn.type = "button";
-    btn.className = "category-card p-3 rounded-xl bg-surface-container hover:bg-surface-container-high text-on-surface-variant hover:text-on-surface flex flex-col items-center justify-center gap-1.5 transition-all transform active:scale-95 text-center";
+    btn.dataset.category = category.name;
+    btn.setAttribute("aria-pressed", String(selected));
+    btn.className = selected ? CATEGORY_CARD_SELECTED : CATEGORY_CARD_BASE;
     btn.innerHTML = `
       <div class="w-9 h-9 rounded-full bg-surface-container-highest flex items-center justify-center">
         <span class="material-symbols-outlined text-[20px]">category</span>
@@ -400,9 +424,11 @@ function renderCategoryGrid() {
     btn.addEventListener("click", () => {
       els.txCategory.value = category.name;
       $$(".category-card").forEach((b) => {
-        b.className = "category-card p-3 rounded-xl bg-surface-container hover:bg-surface-container-high text-on-surface-variant hover:text-on-surface flex flex-col items-center justify-center gap-1.5 transition-all transform active:scale-95 text-center";
+        b.setAttribute("aria-pressed", "false");
+        b.className = CATEGORY_CARD_BASE;
       });
-      btn.className = "category-card p-3 rounded-xl bg-tertiary-container text-on-tertiary-container flex flex-col items-center justify-center gap-1.5 shadow-sm transition-all transform active:scale-95 text-center";
+      btn.setAttribute("aria-pressed", "true");
+      btn.className = CATEGORY_CARD_SELECTED;
     });
     container.appendChild(btn);
   });
@@ -418,6 +444,12 @@ function switchView(view) {
     const active = item.dataset.view === view;
     item.classList.toggle("active", active);
     item.style.color = active ? "var(--ds-primary)" : "var(--ds-on-surface-variant)";
+    if (active) item.setAttribute("aria-current", "page");
+    else item.removeAttribute("aria-current");
+  });
+  $$(".nav-link[data-view]").forEach((item) => {
+    const active = item.dataset.view === view;
+    item.classList.toggle("active", active);
     if (active) item.setAttribute("aria-current", "page");
     else item.removeAttribute("aria-current");
   });
@@ -562,12 +594,10 @@ function openTransactionDialog(transaction = null) {
   calculateExchange();
 
   els.transactionDialog.showModal();
-  els.txOverlay.classList.add("open");
 }
 
 function closeTransactionDialog() {
-  els.transactionDialog.close();
-  els.txOverlay.classList.remove("open");
+  if (els.transactionDialog.open) els.transactionDialog.close();
 }
 
 function defaultAccountId(currency) {
@@ -743,7 +773,7 @@ function renderDashboard() {
   if (categoryCanvas) renderCategoryChart(categoryCanvas, analysis.categories.map((item) => ({ label: item.category, value: item.valuePYG })));
 }
 
-function renderAccountsCarousel() {
+function renderAccountsCarousel(rate = state.settings.brlToPyg) {
   const container = els.accountsCarousel;
   container.replaceChildren();
   const nonArchived = state.accounts.filter((a) => !a.archived);
@@ -754,7 +784,7 @@ function renderAccountsCarousel() {
     card.className = "snap-start shrink-0 w-64 rounded-xl bg-surface-container p-sm shadow-md flex flex-col justify-between";
     const flag = account.currency === "BRL" ? "🇧🇷" : "🇵🇾";
     const colorClass = account.currency === "BRL" ? "text-primary" : "text-tertiary";
-    const balance = accountSummary(account, state.transactions);
+    const balance = accountSummary(account, state.transactions).balance;
     const balanceBRL = formatMoney(balance, account.currency);
     const balanceConverted = account.currency === "BRL"
       ? `≈ ₲ ${Math.round(balance * rate).toLocaleString("es-PY")}`

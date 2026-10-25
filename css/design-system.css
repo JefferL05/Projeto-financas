@@ -72,17 +72,19 @@
   --ds-font-sans: "Plus Jakarta Sans", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   --ds-font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
 
-  --ds-text-display-lg: 40px/48px 700;
-  --ds-text-headline-xl: 28px/36px 700;
-  --ds-text-headline-lg: 22px/30px 600;
-  --ds-text-headline-sm: 18px/26px 600;
-  --ds-text-body-lg: 16px/24px 400;
-  --ds-text-body-md: 14px/20px 400;
-  --ds-text-body-sm: 12px/16px 400;
-  --ds-text-currency-display: 32px/40px 700;
-  --ds-text-currency-tabular: 15px/20px 500;
-  --ds-text-label-md: 13px/16px 600;
-  --ds-text-label-sm: 11px/14px 600;
+  /* Shorthands `font:` exigem família de fonte válida — sem ela a declaração
+     inteira é descartada e as classes .text-* caem em silêncio. */
+  --ds-text-display-lg: 700 40px/48px var(--ds-font-sans);
+  --ds-text-headline-xl: 700 28px/36px var(--ds-font-sans);
+  --ds-text-headline-lg: 600 22px/30px var(--ds-font-sans);
+  --ds-text-headline-sm: 600 18px/26px var(--ds-font-sans);
+  --ds-text-body-lg: 400 16px/24px var(--ds-font-sans);
+  --ds-text-body-md: 400 14px/20px var(--ds-font-sans);
+  --ds-text-body-sm: 400 12px/16px var(--ds-font-sans);
+  --ds-text-currency-display: 700 32px/40px var(--ds-font-mono);
+  --ds-text-currency-tabular: 500 15px/20px var(--ds-font-mono);
+  --ds-text-label-md: 600 13px/16px var(--ds-font-sans);
+  --ds-text-label-sm: 600 11px/14px var(--ds-font-sans);
 
   /* ── Shapes ── */
   --ds-radius-sm: 0.25rem;
@@ -104,6 +106,11 @@
   --ds-space-md: 1rem;
   --ds-space-lg: 1.5rem;
   --ds-space-xl: 2.25rem;
+
+  /* ── Elevation (usada por .card/.toast) ── */
+  --ds-shadow-sm: 0 4px 20px -2px rgba(0, 0, 0, 0.45);
+  --ds-shadow-md: 0 12px 32px -4px rgba(0, 0, 0, 0.6);
+  --ds-shadow-xl: 0 24px 48px rgba(0, 0, 0, 0.5);
 }
 
 /* ── Reset base ── */
@@ -641,7 +648,10 @@ ol {
   pointer-events: auto;
 }
 
-/* ── Dialog/modal ── */
+/* ── Dialog/modal ──
+   O <dialog> é aberto com showModal(), portanto o estado visível é o atributo
+   nativo [open]. A camada .dialog-overlay é mantida para o escurecimento do
+   fundo controlado pelo app.js (mesmo comportamento da versão anterior). */
 .dialog-overlay {
   position: fixed;
   inset: 0;
@@ -658,46 +668,85 @@ ol {
   pointer-events: auto;
 }
 
-.dialog {
+dialog.dialog {
   position: fixed;
   top: 50%;
   left: 50%;
-  transform: translate(-50%, -50%) scale(0.95);
+  transform: translate(-50%, -50%) scale(0.97);
   z-index: 110;
-  width: 92%;
-  max-width: 520px;
+  width: min(560px, calc(100% - 24px));
+  max-width: 560px;
   max-height: 90vh;
-  background: var(--ds-surface-container);
-  border-radius: var(--ds-radius-xl);
-  box-shadow: 0 24px 80px rgba(0, 0, 0, 0.35);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  overflow: auto;
-  opacity: 0;
-  pointer-events: none;
-  transition: all 0.25s ease;
-}
-
-.dialog.open {
+  margin: 0;
+  padding: 0;
+  background: transparent;
+  border: 0;
+  overflow: visible;
   opacity: 1;
   pointer-events: auto;
+  transition: transform 0.2s ease;
+}
+
+dialog.dialog:not([open]) {
+  display: none;
+}
+
+dialog.dialog[open] {
   transform: translate(-50%, -50%) scale(1);
+  animation: ds-dialog-in 0.18s ease-out;
+}
+
+dialog.dialog::backdrop {
+  background: rgba(2, 7, 13, 0.72);
+  backdrop-filter: blur(6px);
+}
+
+@keyframes ds-dialog-in {
+  from { opacity: 0; transform: translate(-50%, -48%) scale(0.97); }
+  to { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  dialog.dialog[open] { animation: none; }
+}
+
+/* Painel interno: superfície elevada do design system */
+.dialog-card {
+  display: flex;
+  flex-direction: column;
+  max-height: 90vh;
+  padding: 0;
+  background: var(--ds-surface-container);
+  color: var(--ds-on-surface);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: var(--ds-radius-xl);
+  box-shadow: 0 24px 80px rgba(0, 0, 0, 0.55);
+  overflow: hidden;
+}
+
+.dialog-card.large {
+  width: 100%;
 }
 
 .dialog-head {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  flex-shrink: 0;
   padding: 16px 20px;
   border-bottom: 1px solid rgba(255, 255, 255, 0.06);
 }
 
 .dialog-body {
+  flex: 1 1 auto;
+  min-height: 0;
   padding: 20px;
   overflow-y: auto;
 }
 
 .dialog-actions {
   display: flex;
+  flex-shrink: 0;
   justify-content: flex-end;
   gap: 10px;
   padding: 16px 20px;
@@ -783,6 +832,18 @@ ol {
     padding-left: var(--ds-margin-desktop);
     padding-right: var(--ds-margin-desktop);
   }
+}
+
+/* Respiro para a bottom-nav fixa no mobile/tablet */
+.main {
+  padding-bottom: 96px;
+}
+
+@media (min-width: 1050px) {
+  /* No desktop a navegação vive na sidebar; a bottom-nav é exclusiva do mobile. */
+  .bottom-nav { display: none; }
+  body.has-bottom-nav { padding-bottom: 0; }
+  .main { padding-bottom: 64px; }
 }
 
 @media (prefers-reduced-motion: reduce) {
